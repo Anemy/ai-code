@@ -12,19 +12,31 @@ export interface CodebaseState {
   status: 'initial' | 'loading' | 'loaded';
   fileStructure: null | FileDirectory;
   localTempGitLink: string | null;
-  error: Error | null;
+  errorMessage: string | null;
 }
 
 export const loadCodebase = createAsyncThunk<
   FileDirectory,
   undefined,
   {
-    state: CodebaseState;
+    state: {
+      codebase: CodebaseState;
+    };
   }
 >('codebase/load', async (payload, thunkAPI) => {
   // loadCodebase
   // thunkAPI.
-  const { githubLink, directory, useGithubLink } = thunkAPI.getState();
+  const {
+    codebase: { githubLink, directory, useGithubLink },
+  } = thunkAPI.getState();
+
+  console.log('in loadCodebase ', githubLink, directory, useGithubLink);
+
+  if ((useGithubLink && !githubLink) || (!useGithubLink && !directory)) {
+    return thunkAPI.rejectWithValue(
+      'Please either choose a directory or enter a github link.'
+    );
+  }
 
   // if () {
   //   // Github.
@@ -42,12 +54,14 @@ export const loadCodebase = createAsyncThunk<
   }
 
   // 2. Create temp directory to copy things to.
-  const tempDir = await createTempDir(`ai-code-${Date.now()}`);
-  const workingDirectory = tempDir.path;
+  const workingDirectory = await createTempDir(`ai-code-${Date.now()}`);
+
+  console.log('created temp workingDirectory', workingDirectory);
 
   // 3. Copy/clone the codebase into the directory.
   if (useGithubLink) {
-    const { stdout } = await execa('git', ['clone', ''], {
+    console.log('cloning the ightub repo...');
+    const { stdout } = await execa('git', ['clone', githubLink], {
       cwd: workingDirectory,
     });
     console.log('clone stdout', stdout);
@@ -75,7 +89,7 @@ function createInitialState(): CodebaseState {
     status: 'initial',
     fileStructure: null,
     localTempGitLink: null,
-    error: null,
+    errorMessage: null,
   };
 }
 const initialState = createInitialState();
@@ -96,6 +110,9 @@ export const codebaseSlice = createSlice({
     ) => {
       state.status = action.payload;
     },
+    setUseGithubLink: (state, action: PayloadAction<boolean>) => {
+      state.useGithubLink = action.payload;
+    },
     resetCodebase: (
       state,
       action: PayloadAction<'initial' | 'loading' | 'loaded'>
@@ -108,7 +125,7 @@ export const codebaseSlice = createSlice({
       state.status = 'loading';
       state.fileStructure = null;
       state.localTempGitLink = null;
-      state.error = null;
+      state.errorMessage = null;
     },
     [loadCodebase.fulfilled.type]: (
       state,
@@ -117,20 +134,28 @@ export const codebaseSlice = createSlice({
       state.status = 'loaded';
       state.fileStructure = action.payload;
       state.localTempGitLink = null; // TODO
-      state.error = null;
+      state.errorMessage = null;
     },
-    [loadCodebase.rejected.type]: (state, action: PayloadAction<Error>) => {
-      state.status = 'loaded';
+    [loadCodebase.rejected.type]: (state, action: PayloadAction<string>) => {
+      console.log('rejected loadCodebase', action);
+      state.status = 'initial';
       state.fileStructure = null;
       state.localTempGitLink = null;
-      state.error = action.payload;
+      state.errorMessage = action.payload
+        ? action.payload
+        : (action as any)?.error?.message;
     },
   },
 });
 
 // Action creators for each case reducer function.
-export const { setDirectory, setGithubLink, setStatus, resetCodebase } =
-  codebaseSlice.actions;
+export const {
+  setDirectory,
+  setGithubLink,
+  setStatus,
+  resetCodebase,
+  setUseGithubLink,
+} = codebaseSlice.actions;
 
 const codebaseReducer = codebaseSlice.reducer;
 export { codebaseReducer };

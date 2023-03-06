@@ -9,7 +9,11 @@ import { dialog } from '@electron/remote';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { setDirectory, setGithubLink } from '../store/codebase';
+import {
+  setDirectory,
+  setGithubLink,
+  setUseGithubLink,
+} from '../store/codebase';
 import type { RootState } from '../store/store';
 
 const containerStyles = css({
@@ -31,8 +35,9 @@ const linkContainerStyles = css({
 });
 
 const submitGithubLinkStyles = css({
+  marginTop: spacing[2],
   display: 'flex',
-  alignItems: 'flex-end',
+  justifyContent: 'flex-end',
 });
 
 function openFolder() {
@@ -69,6 +74,7 @@ const SelectCodebase: React.FunctionComponent = () => {
   }, []);
 
   const onClickSubmitGithubLink = useCallback(() => {
+    dispatch(setUseGithubLink(true));
     // TODO: Link validation.
     navigate('/enter-prompt');
   }, []);
@@ -97,8 +103,18 @@ const SelectCodebase: React.FunctionComponent = () => {
               id="github-link-input"
               aria-labelledby="github-link-input-label"
               onChange={(e) => dispatch(setGithubLink(e.target.value))}
+              value={githubLink}
               placeholder="https://github.com/mongodb-js/compass"
             />
+            {githubLink === null && (
+              <Button
+                onClick={() =>
+                  dispatch(setGithubLink('git@github.com:Anemy/gravity.git'))
+                }
+              >
+                autofill
+              </Button>
+            )}
             {githubLink !== null && (
               <div className={submitGithubLinkStyles}>
                 <Button variant="primary" onClick={onClickSubmitGithubLink}>

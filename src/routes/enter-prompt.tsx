@@ -1,19 +1,19 @@
-import { H2, Body, Label } from '@leafygreen-ui/typography';
+import { Label } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
 import React, { useCallback, useEffect } from 'react';
 import Card from '@leafygreen-ui/card';
 import { css } from '@leafygreen-ui/emotion';
 import TextArea from '@leafygreen-ui/text-input';
 import { spacing } from '@leafygreen-ui/tokens';
-import { dialog } from '@electron/remote';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { setPrompt } from '../store/prompt';
 import { loadCodebase, resetCodebase } from '../store/codebase';
-import type { RootState } from '../store/store';
+import type { AppDispatch, RootState } from '../store/store';
 import { FileStructure } from '../components/file-structure';
 import { Loader } from '../components/loader';
+import { ErrorBanner } from '../components/error-banner';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -31,6 +31,9 @@ const submitContainerStyles = css({
 
 const EnterPrompt: React.FunctionComponent = () => {
   const directory = useSelector((state: RootState) => state.codebase.directory);
+  const errorMessage = useSelector(
+    (state: RootState) => state.codebase.errorMessage
+  );
   const fileStructure = useSelector(
     (state: RootState) => state.codebase.fileStructure
   );
@@ -40,7 +43,7 @@ const EnterPrompt: React.FunctionComponent = () => {
   const codebaseStatus = useSelector(
     (state: RootState) => state.codebase.status
   );
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const onClickBack = useCallback(async () => {
@@ -54,6 +57,7 @@ const EnterPrompt: React.FunctionComponent = () => {
   }, []);
 
   useEffect(() => {
+    console.log('call to start loading the codebase...');
     dispatch(loadCodebase());
   }, []);
 
@@ -84,6 +88,7 @@ const EnterPrompt: React.FunctionComponent = () => {
           </Button>
         </div>
       </Card>
+      <ErrorBanner errorMessage={errorMessage} />
     </div>
   );
 };

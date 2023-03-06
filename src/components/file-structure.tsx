@@ -1,7 +1,8 @@
 import { Body } from '@leafygreen-ui/typography';
 import React, { useCallback, useEffect } from 'react';
-import { css } from '@leafygreen-ui/emotion';
+import { css, cx } from '@leafygreen-ui/emotion';
 import { spacing } from '@leafygreen-ui/tokens';
+import { palette } from '@leafygreen-ui/palette';
 
 import type { FileDirectory } from '../ai-code/local-files';
 
@@ -9,18 +10,27 @@ const containerStyles = css({
   padding: spacing[3],
 });
 
+const folderContainerStyles = css({
+  paddingLeft: spacing[2],
+  borderLeft: `1px solid ${palette.gray.light2}`,
+});
+
 const Folder: React.FunctionComponent<{
   directory: FileDirectory;
-}> = ({ directory }) => {
+  folderName?: string;
+}> = ({ directory, folderName }) => {
   return (
     <>
-      {Object.entries(directory).map(([fileName, contents]) => (
-        <div>
-          <Body>
-            {fileName}: {typeof contents === 'string' ? 'file' : 'folder'}
-          </Body>
-        </div>
-      ))}
+      {!!folderName && <Body>{folderName} V</Body>}
+      <div className={cx(folderName && folderContainerStyles)}>
+        {Object.entries(directory).map(([name, contents]) =>
+          typeof contents === 'string' ? (
+            <Body key={name}>{name}</Body>
+          ) : (
+            <Folder directory={contents} folderName={name} key={name} />
+          )
+        )}
+      </div>
     </>
   );
 };

@@ -12,15 +12,19 @@ export type FileDirectory = {
   [name: string]: FileDirectory | FileName;
 };
 
+// export async function createTempFile(tempDirId: string) {
+//   return await temp.open(tempDirId);
+// }
+
 export async function createTempDir(tempDirId: string) {
-  return await temp.open(tempDirId);
+  return await temp.mkdir(tempDirId);
 }
 
 const MAX_INPUT_FILES = 5;
 
 function getMatchPatternArray(matchPatterns?: string[] | string) {
   if (!matchPatterns) {
-    return ['**/*'];
+    return ['**/*.*'];
   } else if (typeof matchPatterns === 'string') {
     return [matchPatterns];
   } else {
@@ -112,7 +116,7 @@ export async function getFileStructure(options: {
         }
         relativeFolder = relativeFolder[part] as FileDirectory;
       }
-      relativeFolder[lastFileName] = lastFileName;
+      relativeFolder[lastFileName] = relativeFileName;
     }
   }
 
