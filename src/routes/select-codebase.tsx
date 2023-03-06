@@ -1,4 +1,4 @@
-import { H2, Body, Label } from '@leafygreen-ui/typography';
+import { Body, Label } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
 import React, { useCallback, useEffect } from 'react';
 import Card from '@leafygreen-ui/card';
@@ -10,11 +10,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  loadCodebase,
   setDirectory,
   setGithubLink,
   setUseGithubLink,
 } from '../store/codebase';
-import type { RootState } from '../store/store';
+import type { AppDispatch, RootState } from '../store/store';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -51,12 +52,13 @@ const SelectCodebase: React.FunctionComponent = () => {
   const githubLink = useSelector(
     (state: RootState) => state.codebase.githubLink
   );
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   useEffect(() => {
     // When the user has chosen a directory we navigate to the prompt entering.
     if (directory) {
+      dispatch(loadCodebase());
       navigate('/enter-prompt');
     }
   }, [directory]);
@@ -75,13 +77,22 @@ const SelectCodebase: React.FunctionComponent = () => {
 
   const onClickSubmitGithubLink = useCallback(() => {
     dispatch(setUseGithubLink(true));
+    dispatch(loadCodebase());
     // TODO: Link validation.
     navigate('/enter-prompt');
   }, []);
 
   return (
     <div className={containerStyles}>
-      {/* <H2>Code</H2> */}
+      <Body>
+        Welcome! This is an Large Language Model (LLM) powered tool that
+        suggests changes to existing codebases, or can suggest the code to start
+        new projects.
+      </Body>
+      <Body>
+        First choose a place to make changes, next you will be asked what you
+        would like the ai do.
+      </Body>
       <Card className={cardStyles}>
         <div className={optionsContainerStyles}>
           <div>

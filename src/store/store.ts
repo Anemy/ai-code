@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 
 import { codebaseReducer } from './codebase';
+import { promptReducer } from './prompt';
 
 export const store = configureStore({
   reducer: {
     codebase: codebaseReducer,
+    prompt: promptReducer,
   },
 });
 

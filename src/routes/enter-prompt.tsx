@@ -1,6 +1,6 @@
-import { Label } from '@leafygreen-ui/typography';
+import { Body, Label } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import Card from '@leafygreen-ui/card';
 import { css } from '@leafygreen-ui/emotion';
 import TextArea from '@leafygreen-ui/text-input';
@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { setPrompt } from '../store/prompt';
-import { loadCodebase, resetCodebase } from '../store/codebase';
+import { resetCodebase, generateSuggestions } from '../store/codebase';
 import type { AppDispatch, RootState } from '../store/store';
 import { FileStructure } from '../components/file-structure';
 import { Loader } from '../components/loader';
@@ -31,6 +31,10 @@ const submitContainerStyles = css({
 
 const EnterPrompt: React.FunctionComponent = () => {
   const directory = useSelector((state: RootState) => state.codebase.directory);
+  const useGithubLink = useSelector(
+    (state: RootState) => state.codebase.useGithubLink
+  );
+  const promptText = useSelector((state: RootState) => state.prompt.promptText);
   const errorMessage = useSelector(
     (state: RootState) => state.codebase.errorMessage
   );
@@ -52,16 +56,11 @@ const EnterPrompt: React.FunctionComponent = () => {
   }, []);
 
   const onClickSubmitPrompt = useCallback(() => {
-    // TODO: Ensure it's not too early and we've loaded the codebase.
+    dispatch(generateSuggestions());
     navigate('/view-diff');
   }, []);
 
-  useEffect(() => {
-    console.log('call to start loading the codebase...');
-    dispatch(loadCodebase());
-  }, []);
-
-  // TODO: Before prompt, load the directory/repo. Get the file structure.
+  const codebaseIdentifier = useGithubLink ? githubLink : directory;
 
   return (
     <div className={containerStyles}>
@@ -70,9 +69,17 @@ const EnterPrompt: React.FunctionComponent = () => {
       </div>
       <Card className={cardStyles}>
         {codebaseStatus === 'loaded' && (
-          <FileStructure fileStructure={fileStructure} />
+          <>
+            <Body>Code loaded from {codebaseIdentifier}</Body>
+            <FileStructure fileStructure={fileStructure} />
+          </>
         )}
-        {codebaseStatus === 'loading' && <Loader />}
+        {codebaseStatus === 'loading' && (
+          <>
+            <Body>Loading code from {codebaseIdentifier}...</Body>
+            <Loader />
+          </>
+        )}
         <Label htmlFor="prompt-text-area" id="prompt-text-area-label">
           Enter something you'd like done to the codebase.
         </Label>
@@ -81,10 +88,15 @@ const EnterPrompt: React.FunctionComponent = () => {
           aria-labelledby="prompt-text-area-label"
           placeholder="Convert all of the javascript files to typescript"
           onChange={(e) => dispatch(setPrompt(e.target.value))}
+          value={promptText}
         />
         <div className={submitContainerStyles}>
-          <Button variant="primary" onClick={onClickSubmitPrompt}>
-            Next
+          <Button
+            disabled={codebaseStatus !== 'loaded' || !promptText}
+            variant="primary"
+            onClick={onClickSubmitPrompt}
+          >
+            Show proposed changes
           </Button>
         </div>
       </Card>

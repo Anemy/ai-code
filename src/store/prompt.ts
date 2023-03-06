@@ -2,11 +2,11 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 export interface PromptState {
-  prompt: string | null;
+  promptText: string | null;
 }
 
 const initialState: PromptState = {
-  prompt: null,
+  promptText: null,
 };
 
 export const promptSlice = createSlice({
@@ -14,7 +14,7 @@ export const promptSlice = createSlice({
   initialState,
   reducers: {
     setPrompt: (state, action: PayloadAction<string>) => {
-      state.prompt = action.payload;
+      state.promptText = action.payload;
     },
   },
 });

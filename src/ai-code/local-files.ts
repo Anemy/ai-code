@@ -20,8 +20,6 @@ export async function createTempDir(tempDirId: string) {
   return await temp.mkdir(tempDirId);
 }
 
-const MAX_INPUT_FILES = 5;
-
 function getMatchPatternArray(matchPatterns?: string[] | string) {
   if (!matchPatterns) {
     return ['**/*.*'];
@@ -37,79 +35,47 @@ function getMatchPatternArray(matchPatterns?: string[] | string) {
   return matchPatterns;
 }
 
-// export async function getFileNames(options: {
-//   inputFolder: string // Path to the input folder.
-//   matchPatterns?: string[] | string,
-//   ignorePatterns?: string[] | string
-// }): Promise<string[]> {
-//   try {
-//     // Ensure we can access the folder.
-//     await fs.promises.access(options.inputFolder, fs.promises.constants.R_OK);
-//   } catch (err) {
-//     throw new Error(`Cannot access folder "${options.inputFolder}": ${err}`);
-//   }
-
-//   const matchPatterns = getMatchPatternArray(options.matchPatterns);
-//   console.log('Match patterns:');
-//   for (const pattern of matchPatterns) {
-//     console.log(pattern);
-//   }
-
-//   const inputFileNames = new Set<string>();
-//   for (const pattern of matchPatterns) {
-//     // We could parallelize this for large code bases.
-//     const globbedFiles = await glob(path.join(options.inputFolder, pattern), {
-//       ignore: options.ignorePatterns
-//     });
-
-//     for (const fileName of globbedFiles) {
-//       // We remove the input folder so that the ai has less tokens it needs to parse and create.
-//       inputFileNames.add(fileName.substring(options.inputFolder.length + 1));
-//     }
-//   }
-
-//   console.log('\nInput files:');
-//   for (const fileName of inputFileNames) {
-//     console.log(fileName);
-//   }
-
-//   return Array.from(inputFileNames);
-// }
-
-export async function getFileStructure(options: {
+export async function getFileStructure({
+  inputFolder,
+  matchPatterns,
+  ignorePatterns,
+}: {
   inputFolder: string; // Path to the input folder.
   matchPatterns?: string[] | string;
   ignorePatterns?: string[] | string;
-}): Promise<FileDirectory> {
+}): Promise<{
+  fileStructure: FileDirectory;
+  fileCount: number;
+}> {
   try {
     // Ensure we can access the folder.
-    await fs.promises.access(options.inputFolder, fs.promises.constants.R_OK);
+    await fs.promises.access(inputFolder, fs.promises.constants.R_OK);
   } catch (err) {
-    throw new Error(`Cannot access folder "${options.inputFolder}": ${err}`);
+    throw new Error(`Cannot access folder "${inputFolder}": ${err}`);
   }
 
-  const matchPatterns = getMatchPatternArray(options.matchPatterns);
+  const matchPatternArray = getMatchPatternArray(matchPatterns);
   console.log('Match patterns:');
-  for (const pattern of matchPatterns) {
+  for (const pattern of matchPatternArray) {
     console.log(pattern);
   }
 
-  const folderStructure: FileDirectory = {};
-  for (const pattern of matchPatterns) {
+  const fileStructure: FileDirectory = {};
+  const uniqueFileNames = new Set<string>();
+  for (const pattern of matchPatternArray) {
     // We could parallelize this for large code bases.
-    const globbedFiles = await glob(path.join(options.inputFolder, pattern), {
-      ignore: options.ignorePatterns,
+    const globbedFiles = await glob(path.join(inputFolder, pattern), {
+      ignore: ignorePatterns,
     });
 
     for (const fileName of globbedFiles) {
       // We remove the input folder so that the ai has less tokens it needs to parse and create.
-      const relativeFileName = fileName.substring(
-        options.inputFolder.length + 1
-      );
+      const relativeFileName = fileName.substring(inputFolder.length + 1);
+      uniqueFileNames.add(relativeFileName);
       const fileParts = relativeFileName.split('/');
       const lastFileName = fileParts.pop();
 
-      let relativeFolder = folderStructure;
+      let relativeFolder = fileStructure;
       for (const part of fileParts) {
         if (!relativeFolder[part]) {
           relativeFolder[part] = {};
@@ -121,7 +87,10 @@ export async function getFileStructure(options: {
   }
 
   console.log('\nInput files:');
-  console.log(JSON.stringify(folderStructure, null, 2));
+  console.log(JSON.stringify(fileStructure, null, 2));
 
-  return folderStructure;
+  return {
+    fileStructure,
+    fileCount: uniqueFileNames.size,
+  };
 }
