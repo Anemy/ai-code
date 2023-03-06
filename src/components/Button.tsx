@@ -6,7 +6,7 @@ type ButtonProps = {
   onClick: () => void;
 };
 
-export const Button: React.FunctionComponent<ButtonProps> = ({
+const Button: React.FunctionComponent<ButtonProps> = ({
   children,
   className,
   onClick,
@@ -18,4 +18,4 @@ export const Button: React.FunctionComponent<ButtonProps> = ({
   );
 };
 
-export default Button;
+export { Button };

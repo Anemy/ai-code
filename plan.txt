@@ -1,0 +1,17 @@
+Input
+> Prompt
+Select a codebase
+> [select from computer] or [select from github]
+
+It creates a local git repo that is a clone of the codebase
+
+Using the codebase - finetune based on previous commits
+
+It creates a map of the files to change/add/remove
+Checkout a branch, go file by file with what was referenced in the map
+Show the git diff to the user
+
+Describe the changes
+
+Button to create pr or branch? Or change the local files
+

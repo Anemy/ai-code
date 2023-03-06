@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 
-import Button from './components/button/Button';
+import { Button } from './components/Button';
 import { sum } from './modules/sum';
-
-import './styles.css';
 
 export const App: React.FunctionComponent = () => {
   const [count, setCount] = useState(0);
