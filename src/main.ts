@@ -2,7 +2,10 @@ import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 // import { initialize as initializeElectronRemote } from '@electron/remote/main';
 // import electronRemote from '@electron/remote/main';
-import { enable as enableElectronRemote, initialize as initializeElectronRemote } from '@electron/remote/main';
+import {
+  enable as enableElectronRemote,
+  initialize as initializeElectronRemote,
+} from '@electron/remote/main';
 
 initializeElectronRemote();
 

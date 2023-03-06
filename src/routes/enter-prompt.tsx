@@ -10,7 +10,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { setPrompt } from '../store/prompt';
+import { loadCodebase, resetCodebase } from '../store/codebase';
 import type { RootState } from '../store/store';
+import { FileStructure } from '../components/file-structure';
+import { Loader } from '../components/loader';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -28,19 +31,30 @@ const submitContainerStyles = css({
 
 const EnterPrompt: React.FunctionComponent = () => {
   const directory = useSelector((state: RootState) => state.codebase.directory);
+  const fileStructure = useSelector(
+    (state: RootState) => state.codebase.fileStructure
+  );
   const githubLink = useSelector(
     (state: RootState) => state.codebase.githubLink
+  );
+  const codebaseStatus = useSelector(
+    (state: RootState) => state.codebase.status
   );
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const onClickBack = useCallback(async () => {
+    resetCodebase();
     navigate('/');
   }, []);
 
   const onClickSubmitPrompt = useCallback(() => {
-    // TODO: Link validation.
-    navigate('/enter-prompt');
+    // TODO: Ensure it's not too early and we've loaded the codebase.
+    navigate('/view-diff');
+  }, []);
+
+  useEffect(() => {
+    dispatch(loadCodebase());
   }, []);
 
   // TODO: Before prompt, load the directory/repo. Get the file structure.
@@ -51,16 +65,17 @@ const EnterPrompt: React.FunctionComponent = () => {
         <Button onClick={onClickBack}>Back</Button>
       </div>
       <Card className={cardStyles}>
-        <div>
-          TODO: Visualize their mapping
-        </div>
+        {codebaseStatus === 'loaded' && (
+          <FileStructure fileStructure={fileStructure} />
+        )}
+        {codebaseStatus === 'loading' && <Loader />}
         <Label htmlFor="prompt-text-area" id="prompt-text-area-label">
           Enter something you'd like done to the codebase.
         </Label>
         <TextArea
           id="prompt-text-area"
           aria-labelledby="prompt-text-area-label"
-          placeholder="Update javascript to typescript"
+          placeholder="Convert all of the javascript files to typescript"
           onChange={(e) => dispatch(setPrompt(e.target.value))}
         />
         <div className={submitContainerStyles}>
