@@ -1,11 +1,25 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
+// import { initialize as initializeElectronRemote } from '@electron/remote/main';
+// import electronRemote from '@electron/remote/main';
+import { enable as enableElectronRemote, initialize as initializeElectronRemote } from '@electron/remote/main';
+
+initializeElectronRemote();
+
+if ((module as any).hot) {
+  (module as any).hot.accept();
+}
 
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      // enableRemoteModule: true
+    },
   });
 
   // Load the index.html of the app.
@@ -26,6 +40,10 @@ app.on('ready', () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('browser-window-created', (_, window) => {
+  enableElectronRemote(window.webContents);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

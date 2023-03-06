@@ -8,13 +8,13 @@ module.exports = {
   entry: './src/renderer.tsx',
   target: 'electron-renderer',
   devtool: 'source-map',
-  devServer: {
-    contentBase: path.join(__dirname, 'dist/renderer.js'),
-    compress: true,
-    port: 9000,
-  },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
+    fallback: {
+      // If we get rid of the electron node env and need polyfills:
+      // stream: require.resolve('stream-browserify'),
+      // buffer: require.resolve('buffer/')
+    },
   },
   module: {
     rules: [
@@ -28,6 +28,14 @@ module.exports = {
   output: {
     path: path.join(__dirname, 'dist'),
     filename: 'renderer.js',
+  },
+  devServer: {
+    contentBase: path.join(__dirname, 'dist/renderer.js'),
+    compress: true,
+    port: 9000,
+    hot: true,
+
+    // https: false,
   },
   plugins: [
     new HtmlWebpackPlugin({

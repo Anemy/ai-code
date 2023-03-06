@@ -10,3 +10,4 @@ node_modules
 .user-data
 .nvmrc
 .vscode
+.env
