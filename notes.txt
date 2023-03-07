@@ -1,0 +1,15 @@
+Notes:
+
+- Exmaples are good.
+- Can we surface examples relative to the repo code. (After analyzing the code)
+  - These would give the user something to go off of
+  - Are there predetermined actions users are often looking for.
+  - Genres (Refactoring (conversions, new dependencies, updating dependencies -> react 16 -> 17), linting, analyzing, asking questions, generation, alternatives)
+- Conversational flow
+
+
+Today:
+- Conversational flow (Use chat gpt api)
+- How can we analyze the code of the repo as context for the ai's suggestions.
+- Improve the ux
+
