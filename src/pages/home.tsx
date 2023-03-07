@@ -99,7 +99,6 @@ const Home: React.FunctionComponent = () => {
   // TODO: this should be in the store and activatable for each component.
   // With a wrapping component that manages the styles and other things.
   const goBackInHistory = useCallback(() => {
-    console.log('go back in history');
     if (codebaseStatus === 'loading' || codebaseStatus === 'loaded') {
       dispatch(setStatus('initial'));
     }

@@ -16,6 +16,13 @@ export type FileDirectory = {
   [name: string]: FileDirectory | FileName;
 };
 
+export type OutputFile = {
+  fileName: string;
+  text: string;
+  renamed: boolean;
+  oldFileName: string | undefined;
+};
+
 // export async function createTempFile(tempDirId: string) {
 //   return await temp.open(tempDirId);
 // }
@@ -110,12 +117,7 @@ export async function updateFiles({
   outputFiles,
 }: {
   workingDirectory: string;
-  outputFiles: {
-    fileName: string;
-    text: string;
-    renamed: boolean;
-    oldFileName?: string;
-  }[];
+  outputFiles: OutputFile[];
 }) {
   if (outputFiles.length > MAX_INPUT_FILES * 2) {
     console.log('outputFiles', outputFiles);

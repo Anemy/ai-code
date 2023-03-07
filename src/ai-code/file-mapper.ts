@@ -123,6 +123,24 @@ Output:
   return mappingPrompt;
 }
 
+export function parseMapping(text: string) {
+  let mapping;
+  try {
+    mapping = JSON.parse(text);
+  } catch (err) {
+    console.error(err);
+
+    throw new Error(
+      `Unable to parse file mapping request response. It used the instructions: ${err}`
+    );
+  }
+
+  console.log('\nParsed mapping:');
+  console.log(mapping);
+
+  return mapping;
+}
+
 export type FileMapPlan = {
   [fileName: string]: FileMappingOperation;
 };
@@ -203,22 +221,7 @@ async function generateFileMappingPlan(
   console.log('\nMapping response text:');
   console.log(mappingResponse.data.choices[0].text);
 
-  let mapping;
-  try {
-    // result.data.choices[0].text
-    mapping = JSON.parse(mappingResponse.data.choices[0].text as string);
-  } catch (err) {
-    console.error(err);
-
-    throw new Error(
-      `Unable to parse openai 'text-davinci-003' file mapping request response. It used the instructions "${instructions}": ${err}`
-    );
-  }
-
-  console.log('\nParsed mapping:');
-  console.log(mapping);
-
-  return mapping;
+  return parseMapping(mappingResponse.data.choices[0].text);
 }
 
 export { generateFileMappingPlan };

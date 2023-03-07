@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { execa } from 'execa';
 import path from 'path';
 
 import {
@@ -12,9 +11,13 @@ import {
 import type { FileDirectory } from '../ai-code/local-files';
 import { MAX_INPUT_FILES } from '../ai-code/ai';
 import type { PromptState } from './prompt';
-import { editCodeWithIndividualGptRequests } from '../ai-code/code-editor';
-import { ChatBot } from '../ai-code/chat-bot';
-import { createMappingPrompt } from '../ai-code/file-mapper';
+import {
+  editCodeWithChatGPT,
+  editCodeWithIndividualGptRequests,
+} from '../ai-code/code-editor';
+
+// Use the chatbot for responses or regular gpt individual api requests.
+const useChatbot = true;
 
 type CodebaseStatus =
   | 'initial'
@@ -108,28 +111,37 @@ export const generateSuggestions = createAsyncThunk<
   // TODO: Clean this up to one for local also.
   const gitFolder = path.join(workingDirectory, defaultGitFolderName);
 
-  // 1. Clone, analyze, and get suggested edits.
-  const outputFiles = await editCodeWithIndividualGptRequests({
-    workingDirectory: gitFolder,
-    fileStructure,
-    promptText,
-  });
+  if (useChatbot) {
+    // 1. Clone, analyze, and get suggested edits.
+    const outputFiles = await editCodeWithChatGPT({
+      workingDirectory: gitFolder,
+      fileStructure,
+      promptText,
+    });
 
-  // TODO: Use the chatbot here.
-  // const chatBot = new ChatBot();
-  // const mappingPrompt = createMappingPrompt(promptText, fileStructure);
-  // const response = await chatBot.startChat(mappingPrompt);
-  // console.log('chatbot response', response);
+    // 2. Perform the changes; output to the output.
+    await updateFiles({
+      workingDirectory: gitFolder,
+      outputFiles,
+    });
+  } else {
+    // 1. Clone, analyze, and get suggested edits.
+    const outputFiles = await editCodeWithIndividualGptRequests({
+      workingDirectory: gitFolder,
+      fileStructure,
+      promptText,
+    });
 
-  // 2. Perform the changes; output to the output.
-  await updateFiles({
-    workingDirectory: gitFolder,
-    outputFiles,
-  });
+    // 2. Perform the changes; output to the output.
+    await updateFiles({
+      workingDirectory: gitFolder,
+      outputFiles,
+    });
+  }
 
   console.log('Edited files! Now checking the diff...');
 
-  // 3. Get the diff
+  // 3. Get the diff.
   const diffResult = await getGitDiff(gitFolder);
   console.log('git diff result', diffResult);
 
