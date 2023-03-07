@@ -99,6 +99,8 @@ const Home: React.FunctionComponent = () => {
   // TODO: this should be in the store and activatable for each component.
   // With a wrapping component that manages the styles and other things.
   const goBackInHistory = useCallback(() => {
+    // TODO: Cancel async reqs. Rn would move to the other view if fufilled after.
+
     if (codebaseStatus === 'loading' || codebaseStatus === 'loaded') {
       dispatch(setStatus('initial'));
     }

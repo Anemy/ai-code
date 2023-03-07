@@ -5,21 +5,14 @@ import type {
 
 import { openai } from './ai';
 
-// export function startChat() {
-
-// }
+type ChatMessage = {
+  content: string;
+  role: ChatCompletionRequestMessageRoleEnum;
+};
 
 export class ChatBot {
   isInOperation = false;
-
-  chatHistory: {
-    content: string;
-    role: ChatCompletionRequestMessageRoleEnum;
-  }[] = [];
-
-  // constructor() {
-
-  // }
+  chatHistory: ChatMessage[] = [];
 
   async startChat(message: string) {
     if (this.isInOperation) {
@@ -57,6 +50,7 @@ export class ChatBot {
     }
 
     this.chatHistory.push(messageToSend);
+    this.chatHistory.push(response);
 
     return response;
   }
@@ -70,17 +64,16 @@ export class ChatBot {
 
     let response: ChatCompletionResponseMessage;
 
+    const messageToSend: ChatMessage = {
+      role: 'user',
+      content: message,
+    };
+
     try {
       // https://platform.openai.com/docs/api-reference/chat/create
       const completion = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
-        messages: [
-          ...this.chatHistory,
-          {
-            role: 'user',
-            content: message,
-          },
-        ],
+        messages: [...this.chatHistory, messageToSend],
       });
 
       // console.log(completion.data.choices[0].message);
@@ -93,6 +86,9 @@ export class ChatBot {
     } finally {
       this.isInOperation = false;
     }
+
+    this.chatHistory.push(messageToSend);
+    this.chatHistory.push(response);
 
     return response;
   }

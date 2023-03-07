@@ -25,6 +25,12 @@ const cardStyles = css({
   marginTop: spacing[3],
 });
 
+const submitContainerStyles = css({
+  marginTop: spacing[2],
+  display: 'flex',
+  justifyContent: 'flex-end',
+});
+
 const FileDiff: React.FunctionComponent<FileData> = ({
   oldRevision,
   newRevision,
@@ -78,26 +84,29 @@ const ViewSuggestions: React.FunctionComponent = () => {
     }
   }, [diffChanges]);
 
-  // console.log('diffFiles', diffFiles);
-
   return (
     <div className={containerStyles}>
-      <Button onClick={onClickBack}>Back</Button>
+      {codebaseStatus !== 'generating-suggestions' && (
+        <Button onClick={onClickBack}>Back</Button>
+      )}
       {codebaseStatus === 'generating-suggestions' && (
         <CancelLoader
           progressText="Generating suggestions"
           cancelText="Cancel"
-          onCancel={onClickBack} // TODO: Cancel the actual event.
+          onCancel={onClickBack}
         />
       )}
       {diffChanges && (
         <>
           <Card className={cardStyles}>
-            <Body>
-              Here are the suggested changes. Description:{' '}
-              {descriptionOfChanges}
-            </Body>
+            {/* <Body weight="medium">Summary of Changes</Body> */}
+            <Body>{descriptionOfChanges}</Body>
             <div className={diffContainer}>{diffFiles.map(FileDiff)}</div>
+            <div className={submitContainerStyles}>
+              <Button onClick={() => alert('coming soon')} variant="primary">
+                Commit changes...
+              </Button>
+            </div>
           </Card>
           <InputContainer>
             <Button onClick={() => dispatch(generateSuggestions())}>

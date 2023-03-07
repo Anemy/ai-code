@@ -1,4 +1,3 @@
-import Banner from '@leafygreen-ui/banner';
 import React from 'react';
 import { css } from '@leafygreen-ui/emotion';
 import { spacing } from '@leafygreen-ui/tokens';

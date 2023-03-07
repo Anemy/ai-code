@@ -23,23 +23,48 @@ function createEditPrompt(promptText: string) {
 function createChatEditPrompt({
   promptText,
   fileName,
+  outputFileName,
+  isRenamed,
   fileContents,
 }: {
   promptText: string;
   fileName: string;
+  outputFileName?: string;
+  isRenamed?: boolean;
   fileContents: string;
 }) {
-  return `Now we are going file by file and following the mapping from the first question.
-  The entire task is: "${promptText}"
-  The file we're about to edit is named: "${fileName}"
-  Please only respond with the updated file contents, nothing else. Everything after this line is the file contents:
+  // return `Now we are going file by file and following the mapping from the first question.
+  // The entire task is: "${promptText}"
+  // The file we're about to edit is named: "${fileName}"
+  // Respond with only the updated file contents, NOTHING else.
+  // Everything after this line is the file contents:
+  // ${fileContents}`;
+
+  return `Now we are going file by file and following the mapping and instructions from the first question.
+  The file to edit now is ${
+    isRenamed
+      ? `going to be renamed from "${fileName}" to "${outputFileName}"`
+      : `named: "${fileName}"`
+  }.
+  Do not contain any extra text in your response, only the file to be outputted.
+  Respond with the updated file contents, no other text.
+  Everything after this line is the file contents:
   ${fileContents}`;
+
+  // return `Now we are going file by file and following the mapping from the first question.
+  // The entire task is: "${promptText}"
+  // The file we're about to edit is named: "${fileName}"
+  // Respond with only the updated file contents.
+  // Do not respond with anything that would not make sense to add to the file.
+  // Everything after this line is the file contents:
+  // ${fileContents}`;
   //   return `Perform the following task on this file: "${promptText}"`;
   //   return promptText;
 }
 
 function createChatDescriptionPrompt() {
-  return `We've completed the edits. Thanks! How would you summarize the changes made?`;
+  // return `What is a description of the changes made? The mapping from your first reponse was used.`;
+  return `Give a summary of the changes made, do not refer to our conversation, only the prompt that was given in the first question.`;
 }
 
 // Using a mapping and the instructions, create the output files.
@@ -69,8 +94,17 @@ async function createEditedFiles({
       'operation:',
       mapping[fileName]?.operation
     );
+
+    const isRenamed = mapping[fileName]?.operation === 'rename';
+    const outputFileName = isRenamed
+      ? (mapping[fileName] as RenameOperation)?.name || fileName // TODO: Ensure valid name.
+      : fileName;
+
     if (mapping[fileName]?.operation === 'delete') {
-      // Skip the file if the mapping says it's deleted.
+      outputFiles.push({
+        fileName: outputFileName,
+        isDeleted: true,
+      });
       continue;
     }
 
@@ -87,8 +121,6 @@ async function createEditedFiles({
         `Too large of an input file passed, current max is ${MAX_FILE_LENGTH_CHARACTERS} characters. "${fileName}" was "${inputFileContents.length}".`
       );
     }
-
-    // TODO: File renaming/mapping/creation.
 
     try {
       // https://beta.openai.com/docs/api-reference/edits/create
@@ -109,16 +141,10 @@ async function createEditedFiles({
 
       // TODO: Factor in multiple choices.
 
-      const isRenamed = mapping[fileName]?.operation === 'rename';
-
-      const outputFileName = isRenamed
-        ? (mapping[fileName] as RenameOperation)?.name || fileName // TODO: Ensure valid name.
-        : fileName;
-
       outputFiles.push({
         fileName: outputFileName,
         text: result.data.choices[0].text || '',
-        renamed: isRenamed,
+        isRenamed: isRenamed,
         oldFileName: isRenamed ? fileName : undefined,
       });
     } catch (err: any) {
@@ -219,8 +245,15 @@ export async function editCodeWithChatGPT({
     // TODO: File renaming/mapping/creation.
 
     try {
+      const isRenamed = mapping[fileName]?.operation === 'rename';
+      const outputFileName = isRenamed
+        ? (mapping[fileName] as RenameOperation)?.name || fileName // TODO: Ensure valid name.
+        : fileName;
+
       const editFilePrompt = createChatEditPrompt({
         fileName,
+        outputFileName,
+        isRenamed,
         fileContents: inputFileContents,
         promptText,
       });
@@ -229,16 +262,10 @@ export async function editCodeWithChatGPT({
 
       // TODO: Factor in multiple choices.
 
-      const isRenamed = mapping[fileName]?.operation === 'rename';
-
-      const outputFileName = isRenamed
-        ? (mapping[fileName] as RenameOperation)?.name || fileName // TODO: Ensure valid name.
-        : fileName;
-
       outputFiles.push({
         fileName: outputFileName,
         text: response.content || '',
-        renamed: isRenamed,
+        isRenamed,
         oldFileName: isRenamed ? fileName : undefined,
       });
     } catch (err: any) {
@@ -274,6 +301,8 @@ export async function editCodeWithChatGPT({
 
     throw new Error(`Unable to get chat description request: ${err}`);
   }
+
+  console.log('chatbot history', chatBot.chatHistory);
 
   return {
     outputFiles,

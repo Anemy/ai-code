@@ -18,9 +18,10 @@ export type FileDirectory = {
 
 export type OutputFile = {
   fileName: string;
-  text: string;
-  renamed: boolean;
-  oldFileName: string | undefined;
+  text?: string;
+  isRenamed?: boolean;
+  isDeleted?: boolean;
+  oldFileName?: string;
 };
 
 // export async function createTempFile(tempDirId: string) {
@@ -127,10 +128,22 @@ export async function updateFiles({
   console.log('\nOutput files:');
   for (const outputFile of outputFiles) {
     const fileName = outputFile.fileName;
-    console.log(fileName);
+    console.log(outputFile);
 
-    const outputFileName = path.join(workingDirectory, fileName);
-    const outputDirectory = path.dirname(outputFileName);
+    const fullFileName = path.join(workingDirectory, fileName);
+
+    if (outputFile.isDeleted) {
+      try {
+        // Ensure it exists.
+        await fs.promises.access(fullFileName, fs.promises.constants.R_OK);
+        await fs.promises.rm(fullFileName);
+      } catch (err) {
+        // Doesn't exist or can't delete.
+      }
+      continue;
+    }
+
+    const outputDirectory = path.dirname(fullFileName);
     try {
       // See if the folder already exists.
       await fs.promises.access(outputDirectory, fs.promises.constants.R_OK);
@@ -140,15 +153,15 @@ export async function updateFiles({
     }
 
     // TODO: Parallelize.
-    await fs.promises.writeFile(outputFileName, outputFile.text);
+    await fs.promises.writeFile(fullFileName, outputFile.text);
 
-    if (outputFile.renamed) {
+    if (outputFile.isRenamed) {
       const oldFileToDelete = path.join(
         workingDirectory,
         outputFile.oldFileName
       );
       try {
-        // Ensure the folder already exists.
+        // Ensure it exists.
         await fs.promises.access(oldFileToDelete, fs.promises.constants.R_OK);
         await fs.promises.rm(oldFileToDelete);
       } catch (err) {

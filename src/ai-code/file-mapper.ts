@@ -19,16 +19,17 @@ export type ExpandedOperation = {
   names: string[];
 };
 
-// export type CreateOperation = {
-//   operation: 'create';
-//   names: string[];
-// };
+export type CreateOperation = {
+  operation: 'add';
+  names: string[];
+};
 
 export type FileMappingOperation =
   | DeleteOperation
   | RenameOperation
   | DoNothingOperation
-  | ExpandedOperation;
+  | ExpandedOperation
+  | CreateOperation;
 
 export function getFileNamesFromFileStructure(
   fileStructure: FileDirectory,
@@ -37,12 +38,12 @@ export function getFileNamesFromFileStructure(
   let fileNames: string[] = [];
   for (const [name, contents] of Object.entries(fileStructure)) {
     if (typeof contents === 'string') {
-      fileNames.push(`${prefix}/${name}`);
+      fileNames.push(`${prefix}${name}`);
     } else {
       fileNames = fileNames.concat(
         getFileNamesFromFileStructure(
           contents as FileDirectory,
-          `${prefix}/${name}`
+          `${prefix}${name}/`
         )
       );
     }
@@ -84,6 +85,7 @@ Response with the mapping in a json format.
 If nothing should happen to the file structure, which often happens when the instructions are intended for the code inside of files, use the "operation" "none".
 If a file is to be deleted, use the "operation" "delete".
 If a file is to be renamed, use the "operation" "rename".
+If a file is to be added, use the "operation" "add".
 If a file is to be expanded into multiple files, use the "operation" "expand".
 Example 1:
 Input:

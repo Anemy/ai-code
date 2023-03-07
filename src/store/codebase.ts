@@ -111,13 +111,16 @@ export const generateSuggestions = createAsyncThunk<
   // TODO: Clean this up to one for local also.
   const gitFolder = path.join(workingDirectory, defaultGitFolderName);
 
+  let descriptionOfChanges = 'TODO';
   if (useChatbot) {
     // 1. Clone, analyze, and get suggested edits.
-    const outputFiles = await editCodeWithChatGPT({
+    const { outputFiles, description } = await editCodeWithChatGPT({
       workingDirectory: gitFolder,
       fileStructure,
       promptText,
     });
+
+    descriptionOfChanges = description;
 
     // 2. Perform the changes; output to the output.
     await updateFiles({
@@ -147,7 +150,7 @@ export const generateSuggestions = createAsyncThunk<
 
   return {
     diffChanges: diffResult.stdout,
-    descriptionOfChanges: 'TODO',
+    descriptionOfChanges,
   };
 });
 

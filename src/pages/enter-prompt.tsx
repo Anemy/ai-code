@@ -60,13 +60,17 @@ const EnterPrompt: React.FunctionComponent = () => {
 
   return (
     <div className={containerStyles}>
-      <div>
-        <Button onClick={onClickBack}>Back</Button>
-      </div>
-      <Body weight="medium" className={codeDescriptionStyles}>
-        Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
-        {codebaseIdentifier}
-      </Body>
+      {codebaseStatus === 'loaded' && (
+        <>
+          <div>
+            <Button onClick={onClickBack}>Back</Button>
+          </div>
+          <Body weight="medium" className={codeDescriptionStyles}>
+            Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
+            {codebaseIdentifier}
+          </Body>
+        </>
+      )}
       {codebaseStatus === 'loading' && (
         <CancelLoader
           progressText="Loading files"
