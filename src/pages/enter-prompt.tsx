@@ -11,6 +11,7 @@ import { generateSuggestions, setStatus } from '../store/codebase';
 import type { AppDispatch, RootState } from '../store/store';
 import { FileStructure } from '../components/file-structure';
 import { InputContainer } from '../components/input-container';
+import CancelLoader from '../components/cancel-loader';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -58,18 +59,23 @@ const EnterPrompt: React.FunctionComponent = () => {
       <div>
         <Button onClick={onClickBack}>Back</Button>
       </div>
-      <>
-        <Body weight="medium" className={codeDescriptionStyles}>
-          Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
-          {codebaseIdentifier}
-        </Body>
-        {codebaseStatus === 'loaded' && (
-          <>
-            {/* TODO: Add repo/folder title, show icons. */}
-            <FileStructure fileStructure={fileStructure} />
-          </>
-        )}
-      </>
+      <Body weight="medium" className={codeDescriptionStyles}>
+        Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
+        {codebaseIdentifier}
+      </Body>
+      {codebaseStatus === 'loading' && (
+        <CancelLoader
+          progressText="Loading files"
+          cancelText="Cancel"
+          onCancel={onClickBack} // TODO: Cancel the actual event.
+        />
+      )}
+      {codebaseStatus === 'loaded' && (
+        <>
+          {/* TODO: Add repo/folder title, show icons. */}
+          <FileStructure fileStructure={fileStructure} />
+        </>
+      )}
       <InputContainer>
         <Label htmlFor="prompt-text-area" id="prompt-text-area-label">
           Enter something you'd like done to the codebase.

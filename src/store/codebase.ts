@@ -7,6 +7,7 @@ import {
   defaultGitFolderName,
   updateFiles,
   cloneAndAnalyzeCodebase,
+  getGitDiff,
 } from '../ai-code/local-files';
 import type { FileDirectory } from '../ai-code/local-files';
 import { MAX_INPUT_FILES } from '../ai-code/ai';
@@ -115,10 +116,10 @@ export const generateSuggestions = createAsyncThunk<
   });
 
   // TODO: Use the chatbot here.
-  const chatBot = new ChatBot();
-  const mappingPrompt = createMappingPrompt(promptText, fileStructure);
-  const response = await chatBot.startChat(mappingPrompt);
-  console.log('chatbot response', response);
+  // const chatBot = new ChatBot();
+  // const mappingPrompt = createMappingPrompt(promptText, fileStructure);
+  // const response = await chatBot.startChat(mappingPrompt);
+  // console.log('chatbot response', response);
 
   // 2. Perform the changes; output to the output.
   await updateFiles({
@@ -129,20 +130,11 @@ export const generateSuggestions = createAsyncThunk<
   console.log('Edited files! Now checking the diff...');
 
   // 3. Get the diff
-  const gitDiffStdout = await execa(
-    'git',
-    // ['diff'],
-    // --raw ? https://git-scm.com/docs/git-diff
-    // git diff -U1
-    ['diff', '-U1'],
-    {
-      cwd: gitFolder,
-    }
-  );
-  console.log('gitDiffStdout', gitDiffStdout);
+  const diffResult = await getGitDiff(gitFolder);
+  console.log('git diff result', diffResult);
 
   return {
-    diffChanges: gitDiffStdout.stdout,
+    diffChanges: diffResult.stdout,
     descriptionOfChanges: 'TODO',
   };
 });

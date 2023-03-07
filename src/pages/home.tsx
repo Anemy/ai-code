@@ -19,10 +19,9 @@ const historyStyles = css({
   // bottom: spacing[2],
   // TODO: Not view height for this,
   // proper scrolling component with height calc.
-  bottom: '92vh',
+  bottom: '80vh',
   left: 0,
   right: 0,
-  opacity: 0.5,
 });
 
 const historyOverlayStyles = css({
@@ -44,7 +43,7 @@ const presentContainerStyles = css({
   position: 'absolute',
   // TODO: Not view height for this,
   // proper scrolling component with height calc.
-  top: 0,
+  top: spacing[4],
   left: 0,
   right: 0,
 });
@@ -52,7 +51,7 @@ const presentContainerStyles = css({
 const presentWithHistoryStyles = css({
   // TODO: Not view height for this,
   // proper scrolling component with height calc.
-  top: '8vh',
+  top: '20vh',
 });
 
 const Home: React.FunctionComponent = () => {
@@ -112,7 +111,7 @@ const Home: React.FunctionComponent = () => {
     }
   }, [codebaseStatus]);
 
-  const hasHistory = !!history;
+  const hasHistory = history.length > 0;
 
   return (
     <div className={containerStyles}>

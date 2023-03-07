@@ -3,6 +3,7 @@ import fs from 'fs';
 import glob from 'glob';
 import path from 'path';
 import { execa } from 'execa';
+import { MAX_INPUT_FILES } from './ai';
 
 // Automatically track and cleanup files at exit.
 temp.track();
@@ -112,10 +113,15 @@ export async function updateFiles({
   outputFiles: {
     fileName: string;
     text: string;
-    renamed?: boolean;
+    renamed: boolean;
     oldFileName?: string;
   }[];
 }) {
+  if (outputFiles.length > MAX_INPUT_FILES * 2) {
+    console.log('outputFiles', outputFiles);
+    throw new Error(`Too many output files: ${outputFiles.length}`);
+  }
+
   console.log('\nOutput files:');
   for (const outputFile of outputFiles) {
     const fileName = outputFile.fileName;
@@ -216,4 +222,25 @@ export async function cloneAndAnalyzeCodebase({
     fileStructure,
     workingDirectory,
   };
+}
+
+export async function getGitDiff(path: string) {
+  // Stage the changes so we can get the diff of the added files.
+  const gitAddResult = await execa('git', ['add', '.'], {
+    cwd: path,
+  });
+  console.log('git add result', gitAddResult);
+
+  const gitDiffResult = await execa(
+    'git',
+    // ['diff'],
+    // --raw ? https://git-scm.com/docs/git-diff
+    // git diff -U1
+    ['diff', '-U1', '--staged'],
+    {
+      cwd: path,
+    }
+  );
+
+  return gitDiffResult;
 }

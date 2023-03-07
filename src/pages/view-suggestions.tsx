@@ -6,12 +6,12 @@ import { css } from '@leafygreen-ui/emotion';
 import { spacing } from '@leafygreen-ui/tokens';
 import { useSelector, useDispatch } from 'react-redux';
 import { parseDiff, Diff, Hunk } from 'react-diff-view';
-import type { DiffType, HunkData } from 'react-diff-view';
+import type { FileData } from 'react-diff-view';
 
 import type { AppDispatch, RootState } from '../store/store';
 import { generateSuggestions, setStatus } from '../store/codebase';
-import { Loader } from '../components/loader';
 import { InputContainer } from '../components/input-container';
+import CancelLoader from '../components/cancel-loader';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -21,20 +21,30 @@ const diffContainer = css({
   // padding: spacing[3],
 });
 
-const renderFile: React.FunctionComponent<{
-  oldRevision: string;
-  newRevision: string;
-  hunks: HunkData[];
-  type: DiffType;
-}> = ({ oldRevision, newRevision, type, hunks }) => (
-  <Diff
-    key={oldRevision + '-' + newRevision}
-    viewType="split"
-    diffType={type}
-    hunks={hunks}
-  >
-    {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
-  </Diff>
+const renderFile: React.FunctionComponent<FileData> = ({
+  oldRevision,
+  newRevision,
+  type,
+  hunks,
+  newPath,
+  oldPath,
+}) => (
+  <>
+    <Body>
+      {type === 'modify' && `Modify "${newPath}"`}
+      {type === 'add' && `+ Add file "${newPath}"`}
+      {type === 'rename' && `~ Rename file "${oldPath}" -> "${newPath}"`}
+      {type === 'delete' && `- Delete file "${oldPath}"`}
+    </Body>
+    <Diff
+      key={oldRevision + '-' + newRevision}
+      viewType="split"
+      diffType={type}
+      hunks={hunks}
+    >
+      {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
+    </Diff>
+  </>
 );
 
 const ViewSuggestions: React.FunctionComponent = () => {
@@ -64,14 +74,17 @@ const ViewSuggestions: React.FunctionComponent = () => {
     }
   }, [diffChanges]);
 
+  // console.log('diffFiles', diffFiles);
+
   return (
     <div className={containerStyles}>
       <Button onClick={onClickBack}>Back</Button>
       {codebaseStatus === 'generating-suggestions' && (
-        <>
-          <div>Loading suggestions...</div>
-          <Loader />
-        </>
+        <CancelLoader
+          progressText="Generating suggestions"
+          cancelText="Cancel"
+          onCancel={onClickBack} // TODO: Cancel the actual event.
+        />
       )}
       {diffChanges && (
         <>
