@@ -1,4 +1,4 @@
-import { Body } from '@leafygreen-ui/typography';
+import { Body, Subtitle } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
 import React, { useCallback, useMemo } from 'react';
 import Card from '@leafygreen-ui/card';
@@ -18,10 +18,14 @@ const containerStyles = css({
 });
 
 const diffContainer = css({
-  // padding: spacing[3],
+  marginTop: spacing[3],
 });
 
-const renderFile: React.FunctionComponent<FileData> = ({
+const cardStyles = css({
+  marginTop: spacing[3],
+});
+
+const FileDiff: React.FunctionComponent<FileData> = ({
   oldRevision,
   newRevision,
   type,
@@ -29,8 +33,8 @@ const renderFile: React.FunctionComponent<FileData> = ({
   newPath,
   oldPath,
 }) => (
-  <>
-    <Body>
+  <div key={oldRevision + '-' + newRevision}>
+    <Body weight="medium">
       {type === 'modify' && `Modify "${newPath}"`}
       {type === 'add' && `+ Add file "${newPath}"`}
       {type === 'rename' && `~ Rename file "${oldPath}" -> "${newPath}"`}
@@ -44,7 +48,7 @@ const renderFile: React.FunctionComponent<FileData> = ({
     >
       {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
     </Diff>
-  </>
+  </div>
 );
 
 const ViewSuggestions: React.FunctionComponent = () => {
@@ -88,10 +92,14 @@ const ViewSuggestions: React.FunctionComponent = () => {
       )}
       {diffChanges && (
         <>
-          <Body>Diff:</Body>
-          <Card className={diffContainer}>{diffFiles.map(renderFile)}</Card>
+          <Card className={cardStyles}>
+            <Body>
+              Here are the suggested changes. Description:{' '}
+              {descriptionOfChanges}
+            </Body>
+            <div className={diffContainer}>{diffFiles.map(FileDiff)}</div>
+          </Card>
           <InputContainer>
-            <Body>Description of changes: {descriptionOfChanges}</Body>
             <Button onClick={() => dispatch(generateSuggestions())}>
               Regenerate
             </Button>
