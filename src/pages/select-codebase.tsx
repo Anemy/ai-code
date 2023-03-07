@@ -31,6 +31,10 @@ const linkContainerStyles = css({
   flexGrow: 1,
 });
 
+const autofillStyles = css({
+  marginTop: spacing[1],
+});
+
 const submitGithubLinkStyles = css({
   marginTop: spacing[2],
   display: 'flex',
@@ -88,7 +92,7 @@ const SelectCodebase: React.FunctionComponent = () => {
       {/* TODO: Offer the option to start a new project. */}
       <InputContainer>
         <div className={optionsContainerStyles}>
-          <div>
+          {/* <div>
             <Label htmlFor="select-folder-button">Select a local folder</Label>
             <div>
               <Button onClick={onClickSelectFolder} id="select-folder-button">
@@ -98,7 +102,7 @@ const SelectCodebase: React.FunctionComponent = () => {
           </div>
           <div>
             <Body>or</Body>
-          </div>
+          </div> */}
           <div className={linkContainerStyles}>
             <Label htmlFor="github-link-input" id="github-link-input-label">
               Enter a GitHub repository link
@@ -112,6 +116,7 @@ const SelectCodebase: React.FunctionComponent = () => {
             />
             {githubLink === null && (
               <Button
+                className={autofillStyles}
                 onClick={() =>
                   // dispatch(setGithubLink('git@github.com:Anemy/gravity.git'))
                   dispatch(

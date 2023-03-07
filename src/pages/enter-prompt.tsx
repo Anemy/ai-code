@@ -21,6 +21,10 @@ const codeDescriptionStyles = css({
   marginTop: spacing[3],
 });
 
+const autofillStyles = css({
+  marginTop: spacing[1],
+});
+
 const submitContainerStyles = css({
   marginTop: spacing[2],
   display: 'flex',
@@ -89,6 +93,7 @@ const EnterPrompt: React.FunctionComponent = () => {
         />
         {!promptText && (
           <Button
+            className={autofillStyles}
             onClick={() =>
               dispatch(setPrompt('Convert javascript files to typescript'))
             }
