@@ -86,13 +86,22 @@ const EnterPrompt: React.FunctionComponent = () => {
         <TextArea
           id="prompt-text-area"
           aria-labelledby="prompt-text-area-label"
-          placeholder="Convert all of the javascript files to typescript"
+          placeholder="Convert javascript files to typescript"
           onChange={(e) => dispatch(setPrompt(e.target.value))}
           value={promptText}
         />
+        {!promptText && (
+          <Button
+            onClick={() =>
+              dispatch(setPrompt('Convert javascript files to typescript'))
+            }
+          >
+            autofill
+          </Button>
+        )}
         <div className={submitContainerStyles}>
           <Button
-            disabled={codebaseStatus !== 'loaded' || !promptText}
+            disabled={codebaseStatus === 'loading' || !promptText}
             variant="primary"
             onClick={onClickSubmitPrompt}
           >

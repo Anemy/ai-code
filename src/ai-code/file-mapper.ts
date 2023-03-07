@@ -34,12 +34,12 @@ export function getFileNamesFromFileStructure(
   fileStructure: FileDirectory,
   prefix: string
 ): string[] {
-  const fileNames = [];
+  let fileNames: string[] = [];
   for (const [name, contents] of Object.entries(fileStructure)) {
     if (typeof contents === 'string') {
       fileNames.push(`${prefix}/${name}`);
     } else {
-      fileNames.concat(
+      fileNames = fileNames.concat(
         getFileNamesFromFileStructure(
           contents as FileDirectory,
           `${prefix}/${name}`
@@ -70,6 +70,12 @@ function createMappingPrompt(
   // Response with the mapping in a json format.
 
   const inputFileNames = getFileNamesFromFileStructure(fileStructure, '');
+  console.log('Input file names:', inputFileNames);
+
+  if (inputFileNames.length === 0) {
+    // TODO: Remove this when we allow creating new projects.
+    throw new Error('no files');
+  }
 
   // Straight to the point concrete.
   const mappingPrompt = `
@@ -142,6 +148,8 @@ async function generateFileMappingPlan(
   // https://platform.openai.com/docs/guides/fine-tuning
 
   const mappingPrompt = createMappingPrompt(instructions, fileStructure);
+
+  console.log('mappingPrompt', mappingPrompt);
 
   let mappingResponse;
   try {

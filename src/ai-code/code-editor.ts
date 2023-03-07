@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { openai } from './ai';
+import { openai, MAX_FILE_LENGTH_CHARACTERS } from './ai';
 import {
   FileMapPlan,
   getFileNamesFromFileStructure,
@@ -9,7 +9,11 @@ import {
 } from './file-mapper';
 import type { FileDirectory } from './local-files';
 
-const MAX_FILE_LENGTH_CHARACTERS = 10000;
+function createEditPrompt(promptText: string) {
+  return `You are doing a coding task, however, you are only performing one part of these instructions.
+  You will be given one file's contents as input and then requested to give output.
+  The entire task is: "${promptText}"`;
+}
 
 // Using a mapping and the instructions, create the output files.
 async function createEditedFiles({
@@ -30,17 +34,26 @@ async function createEditedFiles({
   const outputFiles: {
     fileName: string;
     text: string;
+    renamed: boolean;
+    oldFileName: string | undefined;
   }[] = [];
 
   const inputFileNames = getFileNamesFromFileStructure(fileStructure, '');
 
   for (const fileName of inputFileNames) {
+    console.log(
+      'Operate on file',
+      fileName,
+      'operation:',
+      mapping[fileName]?.operation
+    );
     if (mapping[fileName]?.operation === 'delete') {
       // Skip the file if the mapping says it's deleted.
       continue;
     }
 
     const absoluteFilePath = path.join(workingDirectory, fileName);
+    console.log('absoluteFilePath', absoluteFilePath);
     // TODO: How to parallelize but also be able to condense/larger changes?
     const inputFileContents = await fs.promises.readFile(
       absoluteFilePath,
@@ -62,7 +75,7 @@ async function createEditedFiles({
         input: inputFileContents,
         // TODO: Fine tune these instructions and somehow weave it together with the whole input.
         // Prompt input/output? QA style
-        instruction: promptText,
+        instruction: createEditPrompt(promptText),
 
         ...(typeof options.temperature === 'number'
           ? {
@@ -74,14 +87,17 @@ async function createEditedFiles({
 
       // TODO: Factor in multiple choices.
 
-      const outputFileName =
-        mapping[fileName]?.operation === 'rename'
-          ? (mapping[fileName] as RenameOperation)?.name || fileName // TODO: Ensure valid name.
-          : fileName;
+      const isRenamed = mapping[fileName]?.operation === 'rename';
+
+      const outputFileName = isRenamed
+        ? (mapping[fileName] as RenameOperation)?.name || fileName // TODO: Ensure valid name.
+        : fileName;
 
       outputFiles.push({
         fileName: outputFileName,
         text: result.data.choices[0].text || '',
+        renamed: isRenamed,
+        oldFileName: isRenamed ? fileName : undefined,
       });
     } catch (err: any) {
       if (err?.response) {
@@ -96,6 +112,8 @@ async function createEditedFiles({
       );
     }
   }
+
+  console.log('outputFiles', outputFiles);
 
   return outputFiles;
 }

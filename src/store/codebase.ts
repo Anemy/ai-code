@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { execa } from 'execa';
 import path from 'path';
+import fs from 'fs';
 
 import { createTempDir, getFileStructure } from '../ai-code/local-files';
 import type { FileDirectory } from '../ai-code/local-files';
@@ -19,7 +20,7 @@ type CodebaseStatus =
 
 export interface CodebaseState {
   directory: string | null;
-  githubLink: string | null; // git@github.com:Anemy/gravity.git or https https://github.com/Anemy/gravity.git
+  githubLink: string | null; // git@github.com:Anemy/test-project-for-ai-code.git or https https://github.com/Anemy/test-project-for-ai-code.git
   useGithubLink: boolean;
   status: CodebaseStatus;
   fileStructure: null | FileDirectory;
@@ -70,12 +71,15 @@ export const loadCodebase = createAsyncThunk<
   // 2. Create temp directory to copy things to.
   const workingDirectory = await createTempDir(operationId);
 
+  const gitFolder = path.join(workingDirectory, defaultGitFolderName);
+
   console.log('Created temp workingDirectory: ', workingDirectory);
 
   // 3. Copy/clone the codebase into the directory.
   if (useGithubLink) {
     console.log('Cloning the github repo...');
-    const { stdout } = await execa(
+    // const { stdout }
+    const gitCloneResult = await execa(
       'git',
       ['clone', githubLink, defaultGitFolderName],
       {
@@ -83,17 +87,18 @@ export const loadCodebase = createAsyncThunk<
       }
     );
 
-    const gitFolder = path.join(workingDirectory, defaultGitFolderName);
-
-    console.log('git clone stdout', stdout);
-    const { stdout: checkoutBranchStdout } = await execa(
+    console.log('git clone result', gitCloneResult.stdout);
+    const checkoutBranchResult = await execa(
       'git',
       ['checkout', '-b', operationId],
       {
         cwd: gitFolder,
       }
     );
-    console.log('git checkout new branch (-b) stdout', checkoutBranchStdout);
+    console.log(
+      'git checkout new branch (-b) stdout',
+      checkoutBranchResult.stdout
+    );
   } else {
     // TODO: Initiate github repo (if it isn't one already?)
     // Checkout a branch
@@ -103,7 +108,7 @@ export const loadCodebase = createAsyncThunk<
 
   // 4. Analyze the directory/file structure.
   const { fileStructure, fileCount } = await getFileStructure({
-    inputFolder: workingDirectory,
+    inputFolder: gitFolder,
   });
 
   // TODO: Check that the resulting file structure is manageable by the ai.
@@ -152,10 +157,8 @@ export const generateSuggestions = createAsyncThunk<
 
   // TODO: Check that the file structure is manageable by the ai before starting.
 
-  console.log('Created mapping:', JSON.stringify(mapping, null, 2));
-
-  // 2. Using the mapping and the instructions, perform the changes.
-  await createEditedFiles({
+  // 2. Using the mapping and the instructions, create the changes we'll do to the files.
+  const outputFiles = await createEditedFiles({
     fileStructure,
     promptText,
     workingDirectory: gitFolder,
@@ -163,9 +166,41 @@ export const generateSuggestions = createAsyncThunk<
     options: {},
   });
 
+  // 3. Perform the changes; output to the output.
+  console.log('\nOutput files:');
+  for (const outputFile of outputFiles) {
+    const fileName = outputFile.fileName;
+    console.log(fileName);
+
+    const outputFileName = path.join(gitFolder, fileName);
+    const outputDirectory = path.dirname(outputFileName);
+    try {
+      // See if the folder already exists.
+      await fs.promises.access(outputDirectory, fs.promises.constants.R_OK);
+    } catch (err) {
+      // Make the folder incase it doesn't exist. If this fails something else is wrong.
+      await fs.promises.mkdir(outputDirectory, { recursive: true });
+    }
+
+    // TODO: Parallelize.
+    await fs.promises.writeFile(outputFileName, outputFile.text);
+
+    if (outputFile.renamed) {
+      const oldFileToDelete = path.join(gitFolder, outputFile.oldFileName);
+      try {
+        // Ensure the folder already exists.
+        await fs.promises.access(oldFileToDelete, fs.promises.constants.R_OK);
+        await fs.promises.rm(oldFileToDelete);
+      } catch (err) {
+        // Doesn't exist or can't delete.
+      }
+    }
+  }
+
   console.log('Edited files! Now checking the diff...');
 
-  const { stdout: gitDiffStdout } = await execa(
+  // const { stdout: gitDiffStdout } =
+  const gitDiffStdout = await execa(
     'git',
     ['diff'], // --raw ? https://git-scm.com/docs/git-diff
     {
@@ -175,7 +210,7 @@ export const generateSuggestions = createAsyncThunk<
   console.log('gitDiffStdout', gitDiffStdout);
 
   return {
-    diffChanges: gitDiffStdout,
+    diffChanges: gitDiffStdout.stdout,
     descriptionOfChanges: 'These are the proposed changes',
   };
 });

@@ -120,7 +120,12 @@ const SelectCodebase: React.FunctionComponent = () => {
             {githubLink === null && (
               <Button
                 onClick={() =>
-                  dispatch(setGithubLink('git@github.com:Anemy/gravity.git'))
+                  // dispatch(setGithubLink('git@github.com:Anemy/gravity.git'))
+                  dispatch(
+                    setGithubLink(
+                      'git@github.com:Anemy/test-project-for-ai-code.git'
+                    )
+                  )
                 }
               >
                 autofill

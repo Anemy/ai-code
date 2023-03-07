@@ -71,9 +71,15 @@ export async function getFileStructure({
     for (const fileName of globbedFiles) {
       // We remove the input folder so that the ai has less tokens it needs to parse and create.
       const relativeFileName = fileName.substring(inputFolder.length + 1);
-      uniqueFileNames.add(relativeFileName);
       const fileParts = relativeFileName.split('/');
       const lastFileName = fileParts.pop();
+
+      if (lastFileName.startsWith('.')) {
+        // Remove . files. (Maybe we'll want this removed later).
+        continue;
+      }
+
+      uniqueFileNames.add(relativeFileName);
 
       let relativeFolder = fileStructure;
       for (const part of fileParts) {
