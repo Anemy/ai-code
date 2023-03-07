@@ -1,7 +1,6 @@
 import { Body, Label } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
 import React, { useCallback, useEffect } from 'react';
-import Card from '@leafygreen-ui/card';
 import { css } from '@leafygreen-ui/emotion';
 import TextInput from '@leafygreen-ui/text-input';
 import { spacing } from '@leafygreen-ui/tokens';
@@ -15,13 +14,11 @@ import {
   setUseGithubLink,
 } from '../store/codebase';
 import type { AppDispatch, RootState } from '../store/store';
+import { InputContainer } from '../components/input-container';
 
 const containerStyles = css({
-  padding: spacing[3],
-});
-
-const cardStyles = css({
-  marginTop: spacing[3],
+  padding: spacing[4],
+  paddingTop: 0,
 });
 
 const optionsContainerStyles = css({
@@ -87,11 +84,9 @@ const SelectCodebase: React.FunctionComponent = () => {
         suggests changes to existing codebases, or can suggest the code to start
         new projects.
       </Body>
-      <Body>
-        First choose a place to make changes, next you will be asked what you
-        would like the ai do.
-      </Body>
-      <Card className={cardStyles}>
+      <Body>First let's find a place to make changes.</Body>
+      {/* TODO: Offer the option to start a new project. */}
+      <InputContainer>
         <div className={optionsContainerStyles}>
           <div>
             <Label htmlFor="select-folder-button">Select a local folder</Label>
@@ -138,7 +133,7 @@ const SelectCodebase: React.FunctionComponent = () => {
             )}
           </div>
         </div>
-      </Card>
+      </InputContainer>
     </div>
   );
 };

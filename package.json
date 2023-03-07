@@ -37,6 +37,7 @@
     "execa": "^7.0.0",
     "glob": "^9.2.1",
     "openai": "^3.2.1",
+    "react-diff-view": "^3.0.2",
     "react-redux": "^8.0.5",
     "react-router-dom": "^6.8.2",
     "temp": "^0.9.4"

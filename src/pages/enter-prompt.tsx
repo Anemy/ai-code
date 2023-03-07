@@ -1,22 +1,22 @@
 import { Body, Label } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
 import React, { useCallback } from 'react';
-import Card from '@leafygreen-ui/card';
 import { css } from '@leafygreen-ui/emotion';
 import TextArea from '@leafygreen-ui/text-input';
 import { spacing } from '@leafygreen-ui/tokens';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { setPrompt } from '../store/prompt';
-import { resetCodebase, generateSuggestions } from '../store/codebase';
+import { generateSuggestions, setStatus } from '../store/codebase';
 import type { AppDispatch, RootState } from '../store/store';
 import { FileStructure } from '../components/file-structure';
+import { InputContainer } from '../components/input-container';
 
 const containerStyles = css({
   padding: spacing[3],
 });
 
-const cardStyles = css({
+const codeDescriptionStyles = css({
   marginTop: spacing[3],
 });
 
@@ -44,7 +44,7 @@ const EnterPrompt: React.FunctionComponent = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const onClickBack = useCallback(async () => {
-    resetCodebase();
+    dispatch(setStatus('initial'));
   }, []);
 
   const onClickSubmitPrompt = useCallback(() => {
@@ -58,14 +58,19 @@ const EnterPrompt: React.FunctionComponent = () => {
       <div>
         <Button onClick={onClickBack}>Back</Button>
       </div>
-      <Card className={cardStyles}>
-        <>
-          <Body>
-            Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
-            {codebaseIdentifier}
-          </Body>
-          <FileStructure fileStructure={fileStructure} />
-        </>
+      <>
+        <Body weight="medium" className={codeDescriptionStyles}>
+          Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
+          {codebaseIdentifier}
+        </Body>
+        {codebaseStatus === 'loaded' && (
+          <>
+            {/* TODO: Add repo/folder title, show icons. */}
+            <FileStructure fileStructure={fileStructure} />
+          </>
+        )}
+      </>
+      <InputContainer>
         <Label htmlFor="prompt-text-area" id="prompt-text-area-label">
           Enter something you'd like done to the codebase.
         </Label>
@@ -94,7 +99,7 @@ const EnterPrompt: React.FunctionComponent = () => {
             Show proposed changes
           </Button>
         </div>
-      </Card>
+      </InputContainer>
     </div>
   );
 };

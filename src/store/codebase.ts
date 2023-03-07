@@ -131,7 +131,10 @@ export const generateSuggestions = createAsyncThunk<
   // 3. Get the diff
   const gitDiffStdout = await execa(
     'git',
-    ['diff'], // --raw ? https://git-scm.com/docs/git-diff
+    // ['diff'],
+    // --raw ? https://git-scm.com/docs/git-diff
+    // git diff -U1
+    ['diff', '-U1'],
     {
       cwd: gitFolder,
     }
@@ -140,7 +143,7 @@ export const generateSuggestions = createAsyncThunk<
 
   return {
     diffChanges: gitDiffStdout.stdout,
-    descriptionOfChanges: 'These are the proposed changes',
+    descriptionOfChanges: 'TODO',
   };
 });
 
@@ -172,10 +175,6 @@ export const codebaseSlice = createSlice({
     },
     setUseGithubLink: (state, action: PayloadAction<boolean>) => {
       state.useGithubLink = action.payload;
-    },
-    resetCodebase: (state) => {
-      // TODO: Better state reset. This is bugged?
-      state = createInitialState();
     },
     setStatus: (state, action: PayloadAction<CodebaseStatus>) => {
       state.status = action.payload;
@@ -236,13 +235,8 @@ export const codebaseSlice = createSlice({
 });
 
 // Action creators for each case reducer function.
-export const {
-  setDirectory,
-  setGithubLink,
-  resetCodebase,
-  setUseGithubLink,
-  setStatus,
-} = codebaseSlice.actions;
+export const { setDirectory, setGithubLink, setUseGithubLink, setStatus } =
+  codebaseSlice.actions;
 
 const codebaseReducer = codebaseSlice.reducer;
 export { codebaseReducer };

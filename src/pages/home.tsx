@@ -1,34 +1,59 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { css } from '@leafygreen-ui/emotion';
+import React, { useCallback, useMemo } from 'react';
+import { css, cx } from '@leafygreen-ui/emotion';
 import { spacing } from '@leafygreen-ui/tokens';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 
 import { SelectCodebase } from './select-codebase';
 import { EnterPrompt } from './enter-prompt';
-import { ViewDiff } from './view-diff';
-import { RootState } from '../store/store';
+import { ViewSuggestions } from './view-suggestions';
+import { AppDispatch, RootState } from '../store/store';
 import { ErrorBanner } from '../components/error-banner';
+import { setStatus } from '../store/codebase';
 
 const containerStyles = css({
   padding: spacing[3],
 });
 
 const historyStyles = css({
+  position: 'absolute',
+  // bottom: spacing[2],
+  // TODO: Not view height for this,
+  // proper scrolling component with height calc.
+  bottom: '92vh',
+  left: 0,
+  right: 0,
   opacity: 0.5,
 });
 
-// {
-//   path: '/',
-//   element: <SelectCodebase />,
-// },
-// {
-//   path: '/enter-prompt',
-//   element: <EnterPrompt />,
-// },
-// {
-//   path: '/view-diff',
-//   element: <ViewDiff />,
-// },
+const historyOverlayStyles = css({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  bottom: 0,
+  right: 0,
+  background: 'white',
+  opacity: 0.5,
+  zIndex: 1,
+
+  '&:hover': {
+    cursor: 'pointer',
+  },
+});
+
+const presentContainerStyles = css({
+  position: 'absolute',
+  // TODO: Not view height for this,
+  // proper scrolling component with height calc.
+  top: 0,
+  left: 0,
+  right: 0,
+});
+
+const presentWithHistoryStyles = css({
+  // TODO: Not view height for this,
+  // proper scrolling component with height calc.
+  top: '8vh',
+});
 
 const Home: React.FunctionComponent = () => {
   const codebaseStatus = useSelector(
@@ -37,21 +62,18 @@ const Home: React.FunctionComponent = () => {
   const errorMessage = useSelector(
     (state: RootState) => state.codebase.errorMessage
   );
-
-  const showDiff =
-    codebaseStatus === 'generating-suggestions' ||
-    codebaseStatus !== 'suggested';
+  const dispatch = useDispatch<AppDispatch>();
 
   const history = useMemo(() => {
     const pastForms = [];
     if (codebaseStatus !== 'initial') {
-      pastForms.push(<SelectCodebase />);
+      pastForms.push(<SelectCodebase key="initial" />);
     }
     if (
       codebaseStatus === 'generating-suggestions' ||
       codebaseStatus === 'suggested'
     ) {
-      pastForms.push(<EnterPrompt />);
+      pastForms.push(<EnterPrompt key="loaded" />);
     }
 
     return pastForms;
@@ -59,32 +81,64 @@ const Home: React.FunctionComponent = () => {
 
   const present = useMemo(() => {
     if (codebaseStatus === 'initial') {
-      return <SelectCodebase />;
+      return <SelectCodebase key={codebaseStatus} />;
     }
     if (codebaseStatus === 'loading' || codebaseStatus === 'loaded') {
-      return <EnterPrompt />;
+      return <EnterPrompt key={codebaseStatus} />;
     }
     if (
       codebaseStatus === 'generating-suggestions' ||
       codebaseStatus === 'suggested'
     ) {
-      return <ViewDiff />;
+      return <ViewSuggestions key={codebaseStatus} />;
     }
 
     // Default case?
     return null;
   }, [codebaseStatus]);
 
+  // TODO: this should be in the store and activatable for each component.
+  // With a wrapping component that manages the styles and other things.
+  const goBackInHistory = useCallback(() => {
+    console.log('go back in history');
+    if (codebaseStatus === 'loading' || codebaseStatus === 'loaded') {
+      dispatch(setStatus('initial'));
+    }
+    if (
+      codebaseStatus === 'generating-suggestions' ||
+      codebaseStatus === 'suggested'
+    ) {
+      dispatch(setStatus('loaded'));
+    }
+  }, [codebaseStatus]);
+
+  const hasHistory = !!history;
+
   return (
     <div className={containerStyles}>
-      <div className={historyStyles}>
-        {history}
-        {/* <SelectCodebase /> */}
+      {hasHistory && (
+        <div
+          className={historyStyles}
+          // TODO: Make this click registered for each history
+          // element and navigate accordingly.
+        >
+          {history}
+          <div
+            // TODO: not a clickable div for accessibility.
+            className={historyOverlayStyles}
+            onClick={() => goBackInHistory()}
+          />
+        </div>
+      )}
+      <div
+        className={cx(
+          presentContainerStyles,
+          hasHistory && presentWithHistoryStyles
+        )}
+      >
+        {present}
+        <ErrorBanner errorMessage={errorMessage} />
       </div>
-      {present}
-      {/* {codebaseStatus !== 'initial' && <EnterPrompt />}
-      {showDiff && <ViewDiff />} */}
-      <ErrorBanner errorMessage={errorMessage} />
     </div>
   );
 };
