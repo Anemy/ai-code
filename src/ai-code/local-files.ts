@@ -2,9 +2,12 @@ import temp from 'temp';
 import fs from 'fs';
 import glob from 'glob';
 import path from 'path';
+import { execa } from 'execa';
 
 // Automatically track and cleanup files at exit.
 temp.track();
+
+export const defaultGitFolderName = 'project';
 
 type FileName = string;
 
@@ -98,5 +101,119 @@ export async function getFileStructure({
   return {
     fileStructure,
     fileCount: uniqueFileNames.size,
+  };
+}
+
+export async function updateFiles({
+  workingDirectory,
+  outputFiles,
+}: {
+  workingDirectory: string;
+  outputFiles: {
+    fileName: string;
+    text: string;
+    renamed?: boolean;
+    oldFileName?: string;
+  }[];
+}) {
+  console.log('\nOutput files:');
+  for (const outputFile of outputFiles) {
+    const fileName = outputFile.fileName;
+    console.log(fileName);
+
+    const outputFileName = path.join(workingDirectory, fileName);
+    const outputDirectory = path.dirname(outputFileName);
+    try {
+      // See if the folder already exists.
+      await fs.promises.access(outputDirectory, fs.promises.constants.R_OK);
+    } catch (err) {
+      // Make the folder incase it doesn't exist. If this fails something else is wrong.
+      await fs.promises.mkdir(outputDirectory, { recursive: true });
+    }
+
+    // TODO: Parallelize.
+    await fs.promises.writeFile(outputFileName, outputFile.text);
+
+    if (outputFile.renamed) {
+      const oldFileToDelete = path.join(
+        workingDirectory,
+        outputFile.oldFileName
+      );
+      try {
+        // Ensure the folder already exists.
+        await fs.promises.access(oldFileToDelete, fs.promises.constants.R_OK);
+        await fs.promises.rm(oldFileToDelete);
+      } catch (err) {
+        // Doesn't exist or can't delete.
+      }
+    }
+  }
+}
+
+export async function cloneAndAnalyzeCodebase({
+  githubLink,
+  useGithubLink,
+}: {
+  githubLink: string | null;
+  useGithubLink: boolean;
+}) {
+  // 1. Ensure the codebase to load exists.
+  if (useGithubLink) {
+    // TODO: Make sure the url valid.
+  } else {
+    // Local files.
+    // TODO: Ensure we can read them? or do that later when copying.
+    throw new Error('not yet supported');
+  }
+
+  const operationId = `ai-code-${Date.now()}`; // TODO: uuid or something.
+
+  // 2. Create temp directory to copy things to.
+  const workingDirectory = await createTempDir(operationId);
+
+  const gitFolder = path.join(workingDirectory, defaultGitFolderName);
+
+  console.log('Created temp workingDirectory: ', workingDirectory);
+
+  // 3. Copy/clone the codebase into the directory.
+  if (useGithubLink) {
+    console.log('Cloning the github repo...');
+    // const { stdout }
+    const gitCloneResult = await execa(
+      'git',
+      ['clone', githubLink, defaultGitFolderName],
+      {
+        cwd: workingDirectory,
+      }
+    );
+
+    console.log('git clone result', gitCloneResult.stdout);
+    const checkoutBranchResult = await execa(
+      'git',
+      ['checkout', '-b', operationId],
+      {
+        cwd: gitFolder,
+      }
+    );
+    console.log(
+      'git checkout new branch (-b) stdout',
+      checkoutBranchResult.stdout
+    );
+  } else {
+    // TODO: Initiate github repo (if it isn't one already?)
+    // Checkout a branch
+  }
+
+  console.log('Analyzing file structure...');
+
+  // 4. Analyze the directory/file structure.
+  const { fileStructure, fileCount } = await getFileStructure({
+    inputFolder: gitFolder,
+  });
+
+  return {
+    fileCount,
+    fileStructure,
+    workingDirectory,
   };
 }

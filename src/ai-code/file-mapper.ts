@@ -51,7 +51,7 @@ export function getFileNamesFromFileStructure(
   return fileNames;
 }
 
-function createMappingPrompt(
+export function createMappingPrompt(
   instructions: string,
   fileStructure: FileDirectory
 ) {

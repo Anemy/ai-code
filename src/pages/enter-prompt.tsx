@@ -6,14 +6,11 @@ import { css } from '@leafygreen-ui/emotion';
 import TextArea from '@leafygreen-ui/text-input';
 import { spacing } from '@leafygreen-ui/tokens';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
 import { setPrompt } from '../store/prompt';
 import { resetCodebase, generateSuggestions } from '../store/codebase';
 import type { AppDispatch, RootState } from '../store/store';
 import { FileStructure } from '../components/file-structure';
-import { Loader } from '../components/loader';
-import { ErrorBanner } from '../components/error-banner';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -35,9 +32,6 @@ const EnterPrompt: React.FunctionComponent = () => {
     (state: RootState) => state.codebase.useGithubLink
   );
   const promptText = useSelector((state: RootState) => state.prompt.promptText);
-  const errorMessage = useSelector(
-    (state: RootState) => state.codebase.errorMessage
-  );
   const fileStructure = useSelector(
     (state: RootState) => state.codebase.fileStructure
   );
@@ -48,16 +42,13 @@ const EnterPrompt: React.FunctionComponent = () => {
     (state: RootState) => state.codebase.status
   );
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
 
   const onClickBack = useCallback(async () => {
     resetCodebase();
-    navigate('/');
   }, []);
 
   const onClickSubmitPrompt = useCallback(() => {
     dispatch(generateSuggestions());
-    navigate('/view-diff');
   }, []);
 
   const codebaseIdentifier = useGithubLink ? githubLink : directory;
@@ -68,18 +59,13 @@ const EnterPrompt: React.FunctionComponent = () => {
         <Button onClick={onClickBack}>Back</Button>
       </div>
       <Card className={cardStyles}>
-        {codebaseStatus === 'loaded' && (
-          <>
-            <Body>Code loaded from {codebaseIdentifier}</Body>
-            <FileStructure fileStructure={fileStructure} />
-          </>
-        )}
-        {codebaseStatus === 'loading' && (
-          <>
-            <Body>Loading code from {codebaseIdentifier}...</Body>
-            <Loader />
-          </>
-        )}
+        <>
+          <Body>
+            Code {codebaseStatus === 'loaded' ? 'loaded' : 'loading'} from{' '}
+            {codebaseIdentifier}
+          </Body>
+          <FileStructure fileStructure={fileStructure} />
+        </>
         <Label htmlFor="prompt-text-area" id="prompt-text-area-label">
           Enter something you'd like done to the codebase.
         </Label>
@@ -109,7 +95,6 @@ const EnterPrompt: React.FunctionComponent = () => {
           </Button>
         </div>
       </Card>
-      <ErrorBanner errorMessage={errorMessage} />
     </div>
   );
 };

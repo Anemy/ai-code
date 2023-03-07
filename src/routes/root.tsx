@@ -5,22 +5,12 @@ import {
   RouterProvider,
 } from 'react-router-dom';
 
-import { SelectCodebase } from './select-codebase';
-import { EnterPrompt } from './enter-prompt';
-import { ViewDiff } from './view-diff';
+import { Home } from '../pages/home';
 
 const router = createHashRouter([
   {
     path: '/',
-    element: <SelectCodebase />,
-  },
-  {
-    path: '/enter-prompt',
-    element: <EnterPrompt />,
-  },
-  {
-    path: '/view-diff',
-    element: <ViewDiff />,
+    element: <Home />,
   },
 ]);
 

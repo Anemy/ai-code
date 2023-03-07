@@ -2,14 +2,18 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { execa } from 'execa';
 import path from 'path';
-import fs from 'fs';
 
-import { createTempDir, getFileStructure } from '../ai-code/local-files';
+import {
+  defaultGitFolderName,
+  updateFiles,
+  cloneAndAnalyzeCodebase,
+} from '../ai-code/local-files';
 import type { FileDirectory } from '../ai-code/local-files';
 import { MAX_INPUT_FILES } from '../ai-code/ai';
 import type { PromptState } from './prompt';
-import { generateFileMappingPlan } from '../ai-code/file-mapper';
-import { createEditedFiles } from '../ai-code/code-editor';
+import { editCodeWithIndividualGptRequests } from '../ai-code/code-editor';
+import { ChatBot } from '../ai-code/chat-bot';
+import { createMappingPrompt } from '../ai-code/file-mapper';
 
 type CodebaseStatus =
   | 'initial'
@@ -30,8 +34,6 @@ export interface CodebaseState {
   diffChanges: string | null; // TODO: not a string.
   descriptionOfChanges: string | null;
 }
-
-const defaultGitFolderName = 'project';
 
 type LoadCodebaseResult = {
   fileStructure: FileDirectory;
@@ -58,58 +60,11 @@ export const loadCodebase = createAsyncThunk<
     );
   }
 
-  // 1. Ensure the codebase to load exists.
-  if (useGithubLink) {
-    // TODO: Make sure the url valid.
-  } else {
-    // Local files.
-    // TODO: Ensure we can read them? or do that later when copying.
-  }
-
-  const operationId = `ai-code-${Date.now()}`; // TODO: uuid or something.
-
-  // 2. Create temp directory to copy things to.
-  const workingDirectory = await createTempDir(operationId);
-
-  const gitFolder = path.join(workingDirectory, defaultGitFolderName);
-
-  console.log('Created temp workingDirectory: ', workingDirectory);
-
-  // 3. Copy/clone the codebase into the directory.
-  if (useGithubLink) {
-    console.log('Cloning the github repo...');
-    // const { stdout }
-    const gitCloneResult = await execa(
-      'git',
-      ['clone', githubLink, defaultGitFolderName],
-      {
-        cwd: workingDirectory,
-      }
-    );
-
-    console.log('git clone result', gitCloneResult.stdout);
-    const checkoutBranchResult = await execa(
-      'git',
-      ['checkout', '-b', operationId],
-      {
-        cwd: gitFolder,
-      }
-    );
-    console.log(
-      'git checkout new branch (-b) stdout',
-      checkoutBranchResult.stdout
-    );
-  } else {
-    // TODO: Initiate github repo (if it isn't one already?)
-    // Checkout a branch
-  }
-
-  console.log('Analyzing file structure...');
-
-  // 4. Analyze the directory/file structure.
-  const { fileStructure, fileCount } = await getFileStructure({
-    inputFolder: gitFolder,
-  });
+  const { fileCount, fileStructure, workingDirectory } =
+    await cloneAndAnalyzeCodebase({
+      githubLink,
+      useGithubLink,
+    });
 
   // TODO: Check that the resulting file structure is manageable by the ai.
   if (fileCount > MAX_INPUT_FILES) {
@@ -149,57 +104,31 @@ export const generateSuggestions = createAsyncThunk<
     return thunkAPI.rejectWithValue('Please enter a prompt to drive changes.');
   }
 
-  // TODO: One source of truth.
+  // TODO: Clean this up to one for local also.
   const gitFolder = path.join(workingDirectory, defaultGitFolderName);
 
-  // 1. Calculate the high level file mapping to follow later in the code modification.
-  const mapping = await generateFileMappingPlan(promptText, fileStructure);
-
-  // TODO: Check that the file structure is manageable by the ai before starting.
-
-  // 2. Using the mapping and the instructions, create the changes we'll do to the files.
-  const outputFiles = await createEditedFiles({
+  // 1. Clone, analyze, and get suggested edits.
+  const outputFiles = await editCodeWithIndividualGptRequests({
+    workingDirectory: gitFolder,
     fileStructure,
     promptText,
-    workingDirectory: gitFolder,
-    mapping,
-    options: {},
   });
 
-  // 3. Perform the changes; output to the output.
-  console.log('\nOutput files:');
-  for (const outputFile of outputFiles) {
-    const fileName = outputFile.fileName;
-    console.log(fileName);
+  // TODO: Use the chatbot here.
+  const chatBot = new ChatBot();
+  const mappingPrompt = createMappingPrompt(promptText, fileStructure);
+  const response = await chatBot.startChat(mappingPrompt);
+  console.log('chatbot response', response);
 
-    const outputFileName = path.join(gitFolder, fileName);
-    const outputDirectory = path.dirname(outputFileName);
-    try {
-      // See if the folder already exists.
-      await fs.promises.access(outputDirectory, fs.promises.constants.R_OK);
-    } catch (err) {
-      // Make the folder incase it doesn't exist. If this fails something else is wrong.
-      await fs.promises.mkdir(outputDirectory, { recursive: true });
-    }
-
-    // TODO: Parallelize.
-    await fs.promises.writeFile(outputFileName, outputFile.text);
-
-    if (outputFile.renamed) {
-      const oldFileToDelete = path.join(gitFolder, outputFile.oldFileName);
-      try {
-        // Ensure the folder already exists.
-        await fs.promises.access(oldFileToDelete, fs.promises.constants.R_OK);
-        await fs.promises.rm(oldFileToDelete);
-      } catch (err) {
-        // Doesn't exist or can't delete.
-      }
-    }
-  }
+  // 2. Perform the changes; output to the output.
+  await updateFiles({
+    workingDirectory: gitFolder,
+    outputFiles,
+  });
 
   console.log('Edited files! Now checking the diff...');
 
-  // const { stdout: gitDiffStdout } =
+  // 3. Get the diff
   const gitDiffStdout = await execa(
     'git',
     ['diff'], // --raw ? https://git-scm.com/docs/git-diff
@@ -245,8 +174,11 @@ export const codebaseSlice = createSlice({
       state.useGithubLink = action.payload;
     },
     resetCodebase: (state) => {
-      // TODO: Better state reset. This is bugged
+      // TODO: Better state reset. This is bugged?
       state = createInitialState();
+    },
+    setStatus: (state, action: PayloadAction<CodebaseStatus>) => {
+      state.status = action.payload;
     },
   },
   extraReducers: {
@@ -304,8 +236,13 @@ export const codebaseSlice = createSlice({
 });
 
 // Action creators for each case reducer function.
-export const { setDirectory, setGithubLink, resetCodebase, setUseGithubLink } =
-  codebaseSlice.actions;
+export const {
+  setDirectory,
+  setGithubLink,
+  resetCodebase,
+  setUseGithubLink,
+  setStatus,
+} = codebaseSlice.actions;
 
 const codebaseReducer = codebaseSlice.reducer;
 export { codebaseReducer };

@@ -3,10 +3,10 @@ import path from 'path';
 
 import { openai, MAX_FILE_LENGTH_CHARACTERS } from './ai';
 import {
-  FileMapPlan,
   getFileNamesFromFileStructure,
-  RenameOperation,
+  generateFileMappingPlan,
 } from './file-mapper';
+import type { FileMapPlan, RenameOperation } from './file-mapper';
 import type { FileDirectory } from './local-files';
 
 function createEditPrompt(promptText: string) {
@@ -119,3 +119,29 @@ async function createEditedFiles({
 }
 
 export { createEditedFiles };
+
+export async function editCodeWithIndividualGptRequests({
+  workingDirectory,
+  fileStructure,
+  promptText,
+}: {
+  workingDirectory: string;
+  promptText: string;
+  fileStructure: FileDirectory;
+}) {
+  // 1. Calculate the high level file mapping to follow later in the code modification.
+  const mapping = await generateFileMappingPlan(promptText, fileStructure);
+
+  // TODO: Check that the file structure is manageable by the ai before starting.
+
+  // 2. Using the mapping and the instructions, create the changes we'll do to the files.
+  const outputFiles = await createEditedFiles({
+    fileStructure,
+    promptText,
+    workingDirectory,
+    mapping,
+    options: {},
+  });
+
+  return outputFiles;
+}

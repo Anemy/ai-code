@@ -7,7 +7,6 @@ import TextInput from '@leafygreen-ui/text-input';
 import { spacing } from '@leafygreen-ui/tokens';
 import { dialog } from '@electron/remote';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
 import {
   loadCodebase,
@@ -53,13 +52,12 @@ const SelectCodebase: React.FunctionComponent = () => {
     (state: RootState) => state.codebase.githubLink
   );
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
 
   useEffect(() => {
     // When the user has chosen a directory we navigate to the prompt entering.
     if (directory) {
       dispatch(loadCodebase());
-      navigate('/enter-prompt');
+      // navigate('/enter-prompt');
     }
   }, [directory]);
 
@@ -79,7 +77,7 @@ const SelectCodebase: React.FunctionComponent = () => {
     dispatch(setUseGithubLink(true));
     dispatch(loadCodebase());
     // TODO: Link validation.
-    navigate('/enter-prompt');
+    // navigate('/enter-prompt');
   }, []);
 
   return (

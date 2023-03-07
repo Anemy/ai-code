@@ -1,16 +1,14 @@
 import { Body } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import Card from '@leafygreen-ui/card';
 import { css } from '@leafygreen-ui/emotion';
 import { spacing } from '@leafygreen-ui/tokens';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
 import type { AppDispatch, RootState } from '../store/store';
-import { generateSuggestions } from '../store/codebase';
+import { generateSuggestions, setStatus } from '../store/codebase';
 import { Loader } from '../components/loader';
-import { ErrorBanner } from '../components/error-banner';
 
 const containerStyles = css({
   padding: spacing[3],
@@ -34,10 +32,11 @@ const ViewDiff: React.FunctionComponent = () => {
     (state: RootState) => state.codebase.descriptionOfChanges
   );
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
 
   const onClickBack = useCallback(async () => {
-    navigate('/enter-prompt');
+    // TODO: Cancel async reqs. Rn would move to the other view if fufilled after.
+
+    dispatch(setStatus('loaded'));
   }, []);
 
   return (
@@ -69,7 +68,6 @@ const ViewDiff: React.FunctionComponent = () => {
           </div>
         )}
       </Card>
-      <ErrorBanner errorMessage={errorMessage} />
     </div>
   );
 };
