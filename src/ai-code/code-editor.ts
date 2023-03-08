@@ -20,6 +20,21 @@ function createEditPrompt(promptText: string) {
   //   return promptText;
 }
 
+const codeStartAndEndEditorSymbol = '@@@';
+
+function getFileContentsFromResponse(response: string) {
+  if (!response.includes(codeStartAndEndEditorSymbol)) {
+    return response;
+  }
+
+  // if (response.indexOf(codeStartAndEndEditorSymbol, response.indexOf(codeStartAndEndEditorSymbol) + codeStartAndEndEditorSymbol.length) !== -1) {
+  // Return the inside.
+  // return response.split(codeStartAndEndEditorSymbol)[1];
+  // }
+
+  return response.split(codeStartAndEndEditorSymbol)[1];
+}
+
 function createChatEditPrompt({
   promptText,
   fileName,
@@ -33,6 +48,17 @@ function createChatEditPrompt({
   isRenamed?: boolean;
   fileContents: string;
 }) {
+  return `Now we are going file by file and following the mapping and instructions from the first question.
+  The file to edit now is ${
+    isRenamed
+      ? `going to be renamed from "${fileName}" to "${outputFileName}"`
+      : `named: "${fileName}"`
+  }.
+  Respond with the updated file contents.
+  Mark the start and end of the file contents with the symbol "${codeStartAndEndEditorSymbol}"
+  Everything after this line is the file contents:
+  ${fileContents}`;
+
   // return `Now we are going file by file and following the mapping from the first question.
   // The entire task is: "${promptText}"
   // The file we're about to edit is named: "${fileName}"
@@ -40,16 +66,17 @@ function createChatEditPrompt({
   // Everything after this line is the file contents:
   // ${fileContents}`;
 
-  return `Now we are going file by file and following the mapping and instructions from the first question.
-  The file to edit now is ${
-    isRenamed
-      ? `going to be renamed from "${fileName}" to "${outputFileName}"`
-      : `named: "${fileName}"`
-  }.
-  Do not contain any extra text in your response, only the file to be outputted.
-  Respond with the updated file contents, no other text.
-  Everything after this line is the file contents:
-  ${fileContents}`;
+  // return `Now we are going file by file and following the mapping and instructions from the first question.
+  // The file to edit now is ${
+  //   isRenamed
+  //     ? `going to be renamed from "${fileName}" to "${outputFileName}"`
+  //     : `named: "${fileName}"`
+  // }.
+  // Do not contain any extra text in your response, only the file to be outputted.
+  // Respond with the updated file contents, no other text.
+  // Mark the start and end of the file contents with the symbol "${codeStartAndEndEditorSymbol}"
+  // Everything after this line is the file contents:
+  // ${fileContents}`;
 
   // return `Now we are going file by file and following the mapping from the first question.
   // The entire task is: "${promptText}"
@@ -264,7 +291,7 @@ export async function editCodeWithChatGPT({
 
       outputFiles.push({
         fileName: outputFileName,
-        text: response.content || '',
+        text: getFileContentsFromResponse(response.content) || '',
         isRenamed,
         oldFileName: isRenamed ? fileName : undefined,
       });

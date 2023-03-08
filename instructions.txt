@@ -1,0 +1,6 @@
+A lit of code modification instructions.
+// TODO: Make a json list and use in code for examples.
+
+Create a basic node js typescript project. Include an eslint config, tsconfig, and an initial test file.
+
+Convert javascript files to typescript

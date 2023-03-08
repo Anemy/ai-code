@@ -23,6 +23,7 @@ const codeDescriptionStyles = css({
 
 const autofillStyles = css({
   marginTop: spacing[1],
+  marginRight: spacing[1],
 });
 
 const submitContainerStyles = css({
@@ -96,14 +97,28 @@ const EnterPrompt: React.FunctionComponent = () => {
           value={promptText}
         />
         {!promptText && (
-          <Button
-            className={autofillStyles}
-            onClick={() =>
-              dispatch(setPrompt('Convert javascript files to typescript'))
-            }
-          >
-            autofill
-          </Button>
+          <>
+            <Button
+              className={autofillStyles}
+              onClick={() =>
+                dispatch(setPrompt('Convert javascript files to typescript'))
+              }
+            >
+              autofill
+            </Button>
+            <Button
+              className={autofillStyles}
+              onClick={() =>
+                dispatch(
+                  setPrompt(
+                    'Create a basic node js typescript project. Include an eslint config, tsconfig, and an initial test file.'
+                  )
+                )
+              }
+            >
+              autofill 2
+            </Button>
+          </>
         )}
         <div className={submitContainerStyles}>
           <Button

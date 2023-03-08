@@ -78,9 +78,11 @@ export function createMappingPrompt(
     throw new Error('no files');
   }
 
-  // Straight to the point concrete.
+  // Create a high level file mapping user to perform changes on or even generate files on a code base.
+  // Create a high level file mapping user to perform changes on a code base.
+
   const mappingPrompt = `
-Create a high level file mapping user to perform changes on a code base.
+Create a high level file mapping user to perform changes on or even generate files on a code base.
 Response with the mapping in a json format.
 If nothing should happen to the file structure, which often happens when the instructions are intended for the code inside of files, use the "operation" "none".
 If a file is to be deleted, use the "operation" "delete".
@@ -90,16 +92,16 @@ If a file is to be expanded into multiple files, use the "operation" "expand".
 Example 1:
 Input:
 Instructions: "convert javascript to typescript"
-["folderName/test.js", "folderName/testTwo.js"]
+["src/test.js", "src/testTwo.js"]
 Output:
 {
-  "folderName/test.js": {
+  "src/test.js": {
     "operation": "rename",
-    "name": "folderName/test.ts"
+    "name": "src/test.ts"
   },
-  "folderName/testTwo.js": {
+  "src/testTwo.js": {
     "operation": "rename",
-    "name": "folderName/testTwo.ts"
+    "name": "src/testTwo.ts"
   }
 }
 Example 2:
@@ -108,11 +110,30 @@ Instructions: "convert usage of the "async" package to use "async/await""
 ["pineapples/index.js", "pineapples/main.js"]
 Output:
 {
-  "pineapples/index.js": {
+  "src/index.js": {
     "operation": "none"
   },
-  "pineapples/main.js": {
+  "src/main.js": {
     "operation": "none"
+  }
+}
+Example 3:
+Input:
+Instructions: "create a basic node js package and repo with eslint"
+[]
+Output:
+{
+  "index.js": {
+    "operation": "add"
+  },
+  "package.json": {
+    "operation": "add"
+  },
+  ".gitignore": {
+    "operation": "add"
+  },
+  ".eslintrc.js": {
+    "operation": "add"
   }
 }
 Now it's your turn.
