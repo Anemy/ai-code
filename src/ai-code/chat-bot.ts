@@ -24,6 +24,7 @@ export class ChatBot {
     let response: ChatCompletionResponseMessage;
 
     const messageToSend = {
+      // TODO: User system commands for mapping request?
       role: 'user' as ChatCompletionRequestMessageRoleEnum,
       content: message,
     };
