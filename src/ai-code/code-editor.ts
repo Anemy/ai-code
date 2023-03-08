@@ -54,7 +54,7 @@ function createChatEditPrompt({
       ? `going to be renamed from "${fileName}" to "${outputFileName}"`
       : `named: "${fileName}"`
   }.
-  Respond with the updated file contents.
+  Respond only with the updated file contents.
   Mark the start and end of the file contents with the symbol "${codeStartAndEndEditorSymbol}"
   Everything after this line is the file contents:
   ${fileContents}`;

@@ -58,7 +58,6 @@ const SelectCodebase: React.FunctionComponent = () => {
     // When the user has chosen a directory we navigate to the prompt entering.
     if (directory) {
       dispatch(loadCodebase());
-      // navigate('/enter-prompt');
     }
   }, [directory]);
 
@@ -75,10 +74,9 @@ const SelectCodebase: React.FunctionComponent = () => {
   }, []);
 
   const onClickSubmitGithubLink = useCallback(() => {
+    // TODO: Link validation.
     dispatch(setUseGithubLink(true));
     dispatch(loadCodebase());
-    // TODO: Link validation.
-    // navigate('/enter-prompt');
   }, []);
 
   return (

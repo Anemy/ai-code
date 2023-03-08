@@ -137,7 +137,9 @@ const Home: React.FunctionComponent = () => {
         )}
       >
         {present}
-        <ErrorBanner errorMessage={errorMessage} />
+        <div className={containerStyles}>
+          <ErrorBanner errorMessage={errorMessage} />
+        </div>
       </div>
     </div>
   );

@@ -100,7 +100,9 @@ const ViewSuggestions: React.FunctionComponent = () => {
         <>
           <Card className={cardStyles}>
             {/* <Body weight="medium">Summary of Changes</Body> */}
-            <Body>{descriptionOfChanges}</Body>
+            <Body>
+              Below is a diff of the proposed changes. {descriptionOfChanges}
+            </Body>
             <div className={diffContainer}>{diffFiles.map(FileDiff)}</div>
             <div className={submitContainerStyles}>
               <Button onClick={() => alert('coming soon')} variant="primary">

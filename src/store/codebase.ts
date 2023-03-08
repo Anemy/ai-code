@@ -19,6 +19,8 @@ import {
 // Use the chatbot for responses or regular gpt individual api requests.
 const useChatbot = true;
 
+const requestCancelledErrorMessage = 'Request cancelled';
+
 type CodebaseStatus =
   | 'initial'
   | 'loading'
@@ -28,6 +30,7 @@ type CodebaseStatus =
 
 export interface CodebaseState {
   directory: string | null;
+  currentOpId: string | null;
   githubLink: string | null; // git@github.com:Anemy/test-project-for-ai-code.git or https https://github.com/Anemy/test-project-for-ai-code.git
   useGithubLink: boolean;
   status: CodebaseStatus;
@@ -55,20 +58,40 @@ export const loadCodebase = createAsyncThunk<
   // loadCodebase
   // thunkAPI.
   const {
-    codebase: { githubLink, directory, useGithubLink },
-  } = thunkAPI.getState();
+    codebase: { githubLink: rawGithubLink, directory, useGithubLink },
+  } = thunkAPI.getState() as {
+    codebase: CodebaseState;
+  };
 
-  if ((useGithubLink && !githubLink) || (!useGithubLink && !directory)) {
+  // TODO: uuid.
+  const thisCurrentOp = `op-${Date.now()}`;
+  thunkAPI.dispatch(setCurrentOpId(thisCurrentOp));
+
+  if ((useGithubLink && !rawGithubLink) || (!useGithubLink && !directory)) {
     return thunkAPI.rejectWithValue(
       'Please either choose a directory or enter a github link.'
     );
   }
+
+  // Add .git if missing.
+  const githubLink = rawGithubLink.endsWith('.git')
+    ? rawGithubLink
+    : `${rawGithubLink}.git`;
 
   const { fileCount, fileStructure, workingDirectory } =
     await cloneAndAnalyzeCodebase({
       githubLink,
       useGithubLink,
     });
+
+  const {
+    codebase: { currentOpId },
+  } = thunkAPI.getState() as {
+    codebase: CodebaseState;
+  };
+  if (currentOpId !== thisCurrentOp) {
+    return thunkAPI.rejectWithValue(requestCancelledErrorMessage);
+  }
 
   // TODO: Check that the resulting file structure is manageable by the ai.
   if (fileCount > MAX_INPUT_FILES) {
@@ -111,6 +134,10 @@ export const generateSuggestions = createAsyncThunk<
   // TODO: Clean this up to one for local also.
   const gitFolder = path.join(workingDirectory, defaultGitFolderName);
 
+  // TODO: uuid.
+  const thisCurrentOp = `op-${Date.now()}`;
+  thunkAPI.dispatch(setCurrentOpId(thisCurrentOp));
+
   let descriptionOfChanges = 'TODO';
   if (useChatbot) {
     // 1. Clone, analyze, and get suggested edits.
@@ -121,6 +148,15 @@ export const generateSuggestions = createAsyncThunk<
     });
 
     descriptionOfChanges = description;
+
+    const {
+      codebase: { currentOpId },
+    } = thunkAPI.getState() as {
+      codebase: CodebaseState;
+    };
+    if (currentOpId !== thisCurrentOp) {
+      return thunkAPI.rejectWithValue(requestCancelledErrorMessage);
+    }
 
     // 2. Perform the changes; output to the output.
     await updateFiles({
@@ -135,6 +171,15 @@ export const generateSuggestions = createAsyncThunk<
       promptText,
     });
 
+    const {
+      codebase: { currentOpId },
+    } = thunkAPI.getState() as {
+      codebase: CodebaseState;
+    };
+    if (currentOpId !== thisCurrentOp) {
+      return thunkAPI.rejectWithValue(requestCancelledErrorMessage);
+    }
+
     // 2. Perform the changes; output to the output.
     await updateFiles({
       workingDirectory: gitFolder,
@@ -143,6 +188,16 @@ export const generateSuggestions = createAsyncThunk<
   }
 
   console.log('Edited files! Now checking the diff...');
+
+  const {
+    codebase: { currentOpId },
+  } = thunkAPI.getState() as {
+    codebase: CodebaseState;
+  };
+
+  if (currentOpId !== thisCurrentOp) {
+    return thunkAPI.rejectWithValue(requestCancelledErrorMessage);
+  }
 
   // 3. Get the diff.
   const diffResult = await getGitDiff(gitFolder);
@@ -163,6 +218,7 @@ function createInitialState(): CodebaseState {
     status: 'initial',
     fileStructure: null,
     errorMessage: null,
+    currentOpId: null,
 
     diffChanges: null,
     descriptionOfChanges: null,
@@ -183,8 +239,13 @@ export const codebaseSlice = createSlice({
     setUseGithubLink: (state, action: PayloadAction<boolean>) => {
       state.useGithubLink = action.payload;
     },
+    setCurrentOpId: (state, action: PayloadAction<string | null>) => {
+      state.currentOpId = action.payload;
+    },
     setStatus: (state, action: PayloadAction<CodebaseStatus>) => {
       state.status = action.payload;
+      // (Hacky implementation) release any current op.
+      state.currentOpId = null;
     },
   },
   extraReducers: {
@@ -199,11 +260,17 @@ export const codebaseSlice = createSlice({
       action: PayloadAction<LoadCodebaseResult>
     ) => {
       state.status = 'loaded';
+      state.currentOpId = null;
       state.fileStructure = action.payload.fileStructure;
       state.workingDirectory = action.payload.workingDirectory;
       state.errorMessage = null;
     },
     [loadCodebase.rejected.type]: (state, action: PayloadAction<string>) => {
+      // Do nothing if request cancelled.
+      if (action.payload === requestCancelledErrorMessage) {
+        return;
+      }
+
       state.status = 'initial';
       state.fileStructure = null;
       state.workingDirectory = null;
@@ -223,6 +290,7 @@ export const codebaseSlice = createSlice({
       action: PayloadAction<SuggestionsResult>
     ) => {
       state.status = 'suggested';
+      state.currentOpId = null;
       state.diffChanges = action.payload.diffChanges;
       state.descriptionOfChanges = action.payload.descriptionOfChanges;
       state.errorMessage = null;
@@ -231,6 +299,11 @@ export const codebaseSlice = createSlice({
       state,
       action: PayloadAction<string>
     ) => {
+      // Do nothing if request cancelled.
+      if (action.payload === requestCancelledErrorMessage) {
+        return;
+      }
+
       state.status = 'loaded';
       state.diffChanges = null;
       state.descriptionOfChanges = null;
@@ -242,8 +315,13 @@ export const codebaseSlice = createSlice({
 });
 
 // Action creators for each case reducer function.
-export const { setDirectory, setGithubLink, setUseGithubLink, setStatus } =
-  codebaseSlice.actions;
+export const {
+  setDirectory,
+  setGithubLink,
+  setUseGithubLink,
+  setStatus,
+  setCurrentOpId,
+} = codebaseSlice.actions;
 
 const codebaseReducer = codebaseSlice.reducer;
 export { codebaseReducer };
